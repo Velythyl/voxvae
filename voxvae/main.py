@@ -43,7 +43,7 @@ def main(cfg):
         raise NotImplementedError(f"Optimizer {cfg.optimizer.type} is not supported")
 
     # Train the model
-    trained_model = train(key, model, train_loader, test_loader, val_loader, optimizer, num_epochs=cfg.train.num_epochs)
+    trained_model = train(key, model, train_loader, test_loader, val_loader, optimizer, num_epochs=cfg.train.num_epochs, log_freq=cfg.evaltest.log_freq)
 
     eqx.tree_serialise_leaves("trained.eqx", trained_model)
 

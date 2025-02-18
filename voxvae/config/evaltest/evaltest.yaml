@@ -1,1 +1,2 @@
 batch_size: 128
+log_freq: 10

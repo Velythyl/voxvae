@@ -24,7 +24,7 @@ def train_step(optimizer, model, opt_state, x):
     return model, opt_state, loss
 
 # Training loop
-def train(key, model, train_loader, test_loader, val_loader, optimizer, num_epochs):
+def train(key, model, train_loader, test_loader, val_loader, optimizer, num_epochs, log_freq):
     opt_state = optimizer.init(eqx.filter(model, eqx.is_inexact_array))
     for epoch in range(num_epochs):
         epoch_loss = 0.0
@@ -36,11 +36,12 @@ def train(key, model, train_loader, test_loader, val_loader, optimizer, num_epoc
 
         epoch_loss = epoch_loss / train_loader.num_batch_per_epoch
 
-        key, rng = jax.random.split(key)
-        wandb_dict = metrics(rng, model, test_loader, "test")
-        wandb_dict.update(metrics(rng, model, val_loader, "val"))
-        wandb_dict["train/loss"] = epoch_loss
-        wandb.log(wandb_dict)
+        if epoch % log_freq == 0:
+            key, rng = jax.random.split(key)
+            wandb_dict = metrics(rng, model, test_loader, "test")
+            wandb_dict.update(metrics(rng, model, val_loader, "val"))
+            wandb_dict["train/loss"] = epoch_loss
+            wandb.log(wandb_dict)
 
         print(f"Epoch {epoch + 1}, Loss: {epoch_loss}")
     return model
