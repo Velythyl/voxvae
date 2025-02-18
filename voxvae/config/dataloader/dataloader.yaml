@@ -1,0 +1,5 @@
+
+data_path: /home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml
+batch_size: 32
+num_workers: 4
+grid_size: 32

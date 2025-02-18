@@ -1,0 +1,8 @@
+
+defaults:
+  - model: autoencoder
+  - train: train
+  - optimizer: adam
+  - dataloader: dataloader
+  - meta: meta
+  - evaltest: evaltest
