@@ -244,7 +244,7 @@ def split_counts(total: int, percentages: List[int]) -> List[int]:
     return raw_counts
 
 import multiprocessing as mp
-def get_dataloaders(root, grid_size, batch_size, splits=(80,10,10), num_workers=mp.cpu_count()-2):
+def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), num_workers=mp.cpu_count()-2):
 
     # Collect and filter XML file paths
     json_paths = []
@@ -254,7 +254,7 @@ def get_dataloaders(root, grid_size, batch_size, splits=(80,10,10), num_workers=
                 json_path = os.path.join(root, file)
                 json_paths.append(json_path)
 
-    json_paths = np.array(json_paths[:10])
+    json_paths = np.array(json_paths[:fewer_files])
     np.random.shuffle(json_paths)
 
     with mp.Pool(num_workers) as pool:

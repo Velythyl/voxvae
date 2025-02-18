@@ -29,6 +29,7 @@ def main(cfg):
         cfg.dataloader.data_path,
         cfg.dataloader.grid_size,
         cfg.dataloader.batch_size,
+        cfg.dataloader.fewer_files
     )
 
     # Initialize model and optimizer
