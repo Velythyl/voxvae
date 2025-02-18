@@ -1,5 +1,5 @@
 
-data_path: /home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml
+data_path: /home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/
 batch_size: 32
 num_workers: 4
 grid_size: 32

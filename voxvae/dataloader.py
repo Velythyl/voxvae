@@ -190,8 +190,12 @@ class DL:
 
 
 def load_json_to_npmjcf(inpath, array_backend=np):
-    with gzip.open(inpath, 'rt', encoding='UTF-8') as zipfile:
-        x = json.load(zipfile)
+    try:
+        with gzip.open(inpath, 'rt', encoding='UTF-8') as zipfile:
+            x = json.load(zipfile)
+    except gzip.BadGzipFile:
+        return inpath, None
+
 
     ret = {}
     for partname, subdict in x.items():
@@ -212,7 +216,7 @@ def load_json_to_npmjcf(inpath, array_backend=np):
     p,c = ret[">FULL<"]["pcd_points"], ret[">FULL<"]["pcd_colors"]
     p,c = pc_marshall(p, c, 4096)
 
-    return NP_MJCF(p,c, np.array(unique_colors))
+    return inpath, NP_MJCF(p,c, np.array(unique_colors))
 
 
 
@@ -250,8 +254,8 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
     json_paths = []
     for root, _, files in os.walk(root):
         for file in files:
-            if file.endswith(".json"):
-                json_path = os.path.join(root, file)
+            json_path = os.path.join(root, file)
+            if json_path.endswith(".json") and "/metadata/" not in json_path:
                 json_paths.append(json_path)
 
     json_paths = np.array(json_paths[:fewer_files])
@@ -260,13 +264,23 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
     with mp.Pool(num_workers) as pool:
         jsons = list(
             tqdm(
-                    pool.imap_unordered(load_json_to_npmjcf, json_paths, chunksize=max(len(json_paths) // (num_workers * 2), 1)),
+                    pool.imap_unordered(load_json_to_npmjcf, json_paths, chunksize=max(len(json_paths) // (num_workers * 100), 1)),
                 total=len(json_paths),
                 desc="Loading PCDs from JSON"
             )
         )
 
-    splits = split_counts(len(json_paths), splits)
+    temp_jsons = []
+    for filepath, jsondata in jsons:
+        if jsondata is None:
+            print(filepath)
+            continue
+        temp_jsons.append(jsondata)
+    jsons = temp_jsons
+
+    #json_paths = list(filter(lambda x: x is not None, json_paths))
+
+    splits = split_counts(len(jsons), splits)
 
     train = jsons[:splits[0]]
     test = jsons[splits[0]:splits[1]+splits[0]]
