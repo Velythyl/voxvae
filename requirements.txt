@@ -1,1 +1,6 @@
 git+https://github.com/Velythyl/jaxvox.git
+hydra-core
+wandb
+plotly
+jax[cuda12]
+tqdm
