@@ -4,7 +4,7 @@ import json
 import os
 
 from typing_extensions import Self
-from typing import List, Callable
+from typing import List
 
 import jax
 import jaxvox
@@ -15,11 +15,12 @@ import numpy as np
 from flax import struct
 import jax.numpy as jnp
 
-from voxvae.jaxutils import bool_ifelse
-from voxvae.o3d_utils import pc_marshall, p_rescale_01, vis_pm
+from voxvae.utils.jaxutils import bool_ifelse, map_ternary
+from voxvae.pcd.pcd_vis import vis_pm
+from voxvae.pcd.pcd_utils import pc_marshall, p_rescale_01, random_3drot
 
-from voxvae.pcd_augmentations import random_3drot
-from voxvae.remap_voxseg import map_tensor
+
+from voxvae.dataloading.splits import split_counts
 
 
 @struct.dataclass
@@ -77,21 +78,7 @@ class DATASET:
         return len(self.flat_map)
 
 
-@struct.dataclass
-class DL_SHUF:
-    shuf: jnp.ndarray
-    idx: jnp.ndarray
-    batch_size: int
 
-    def next_(self, key):
-        oob = self.idx + self.batch_size > self.shuf.shape[0]
-
-        new_idx = bool_ifelse(oob, 0, self.idx + self.batch_size)
-        new_shuf = bool_ifelse(oob, jax.random.choice(key, jnp.arange(self.shuf.shape[0]), replace=False), self.shuf)
-        return DL_SHUF(new_shuf, new_idx)
-
-    def get_batch_indices(self):
-        return self.shuf[self.idx:self.idx+self.batch_size]
 
 @struct.dataclass
 class DL:
@@ -116,7 +103,7 @@ class DL:
         return self.empty_voxgrid.voxel_size
 
     @classmethod
-    def create(cls, dataset, batch_size, grid_size, augment_data=random_3drot, pcd_is: float = 0.33, pcd_isnotis: float = 0.66, pcd_isnot: float = 0.99) -> (Self, DL_SHUF):
+    def create(cls, dataset, batch_size, grid_size, augment_data=random_3drot, pcd_is: float = 0.33, pcd_isnotis: float = 0.66, pcd_isnot: float = 0.99) -> Self:
         if batch_size > len(dataset):
             batch_size = len(dataset)
 
@@ -150,7 +137,7 @@ class DL:
 
         combined_voxgrid = (grid_is * 1 + grid_isnot * 2)  # {"is": 0.5, "isnotis": 1.5, "isnot: 1}
 
-        combined_voxgrid = map_tensor(combined_voxgrid, (self.pcd_is, self.pcd_isnotis, self.pcd_isnot))
+        combined_voxgrid = map_ternary(combined_voxgrid, (self.pcd_is, self.pcd_isnotis, self.pcd_isnot))
 
         return combined_voxgrid
 
@@ -218,37 +205,20 @@ def load_json_to_npmjcf(inpath, array_backend=np):
 
     return inpath, NP_MJCF(p,c, np.array(unique_colors))
 
+@struct.dataclass
+class SplitLoaders:
+    train: DL
+    val: DL
+    test: DL
 
+    prop_empty: float
+    prop_is: int
+    prop_isnotis: int
+    prop_isnot: int
 
-
-def split_counts(total: int, percentages: List[int]) -> List[int]:
-    # Ensure percentages sum to 100
-    if sum(percentages) == 1:
-        percentages = [p*100 for p in percentages]
-    assert sum(percentages) == 100
-
-    # Initial allocation based on percentage
-    raw_counts = [max(1, round(total * p / 100)) for p in percentages]
-
-    # Adjust to match total exactly
-    difference = total - sum(raw_counts)
-
-    # Distribute the remaining items to the largest percentage groups
-    for _ in range(abs(difference)):
-        if difference > 0:
-            # Add 1 to the split with the highest percentage
-            idx = max(range(len(percentages)), key=lambda i: (percentages[i], -raw_counts[i]))
-            raw_counts[idx] += 1
-        elif difference < 0:
-            # Remove 1 from the split with the highest allocated count (while ensuring min 1)
-            idx = max((i for i in range(len(raw_counts)) if raw_counts[i] > 1),
-                      key=lambda i: raw_counts[i])
-            raw_counts[idx] -= 1
-
-    return raw_counts
 
 import multiprocessing as mp
-def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), num_workers=mp.cpu_count()-2):
+def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), num_workers=mp.cpu_count()-2, pcd_is=0.33, pcd_isnotis=0.66, pcd_isnot=0.99):
 
     # Collect and filter XML file paths
     json_paths = []
@@ -287,9 +257,35 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
     val = jsons[splits[1]+splits[0]:]
 
     def get_DL(jsons):
-        return DL.create(DATASET.create(jsons), grid_size=grid_size, batch_size=batch_size)
+        return DL.create(DATASET.create(jsons), grid_size=grid_size, batch_size=batch_size, pcd_is=pcd_is, pcd_isnotis=pcd_isnotis, pcd_isnot=pcd_isnot)
 
-    return get_DL(train), get_DL(test), get_DL(val)
+    train, val, test = get_DL(train), get_DL(val), get_DL(test)
+
+    num_empty = 0
+    num_is = 0
+    num_isnotis = 0
+    num_isnot = 0
+
+    for dl in [train, val, test]:
+        for _ in range(dl.num_batch_per_epoch):
+            dl, batch = dl.get_batch_(jax.random.PRNGKey(0))  # key is useless here
+
+            num_empty += (batch == 0).sum()
+            num_is += (batch == pcd_is).sum()
+            num_isnotis += (batch == pcd_isnotis).sum()
+            num_isnot += (batch == pcd_isnot).sum()
+
+    total = num_empty + num_is + num_isnotis + num_isnot
+
+    return SplitLoaders(
+        train=train,
+        val=val,
+        test=test,
+        prop_empty=float(num_empty / total),
+        prop_is=float(num_is / total),
+        prop_isnotis=float(num_isnotis / total),
+        prop_isnot=float(num_isnot / total)
+    )
 
 if __name__ == "__main__":
     train, test, val = get_dataloaders("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml", 32, 10)

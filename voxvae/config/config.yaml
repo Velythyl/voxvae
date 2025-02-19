@@ -6,3 +6,4 @@ defaults:
   - dataloader: dataloader
   - meta: meta
   - evaltest: evaltest
+  - datarep: continuous

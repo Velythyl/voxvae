@@ -4,3 +4,7 @@ wandb
 plotly
 jax[cuda12]
 tqdm
+flax
+matplotlib
+open3d
+hydra-submitit-launcher

@@ -1,0 +1,4 @@
+pcd_is: 0.33
+pcd_isnotis: 0.66
+pcd_isnot: 0.99
+onehot: false

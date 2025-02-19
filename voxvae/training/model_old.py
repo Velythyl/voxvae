@@ -1,8 +1,13 @@
+
+
+
+
+
 import equinox as eqx
 import jax
 from jax import numpy as jnp
 
-from voxvae.jaxutils import split_key
+from voxvae.utils.jaxutils import split_key
 
 
 class Encoder(eqx.Module):

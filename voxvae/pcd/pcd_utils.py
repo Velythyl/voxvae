@@ -1,25 +1,11 @@
-from typing import Union
-
+import jax
 import numpy as np
-import plotly
-from jaxvox import VoxCol, VoxGrid
-import jax.numpy as jnp
-from matplotlib import pyplot as plt
-
-from voxvae.jaxutils import bool_ifelse
+from jax import numpy as jnp
+from jax._src.scipy.spatial.transform import Rotation as R
 
 
-def pc_to_pcd(p, c):
-    p = np.asarray(p, dtype=np.float64)
-    c = np.asarray(c, dtype=np.float64)
 
-    # todo merge with pointcloud.py
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(p)
-    pcd.colors = o3d.utility.Vector3dVector(c)
-    return pcd
-
-def pc_marshall(p,c, num_points):
+def pc_marshall(p, c, num_points):
     num_original_points = p.shape[0]
 
     if num_original_points > num_points:
@@ -99,7 +85,10 @@ def pc_downsample(p, c, num_keep):
 
     return p[selected_indices], c[selected_indices]
 
+
 EPSILON = 0.0001
+
+
 def p_rescale_01(p):
     translate = 0 - p.min(axis=0)
     translated_p = p + translate + EPSILON
@@ -110,58 +99,49 @@ def p_rescale_01(p):
     return translated_p * downscale_factor # (lambda p,c: ((p + translate + EPSILON) * downscale_factor,c))
 
 
-def visualize_voxgrid(voxgrid: Union[jnp.ndarray, VoxGrid]):
-    if isinstance(voxgrid, np.ndarray) or isinstance(voxgrid, jnp.ndarray):
-        temp = VoxGrid.build_from_bounds(jnp.zeros(3), jnp.ones(3), 1 / voxgrid.shape[0])
-        voxgrid = temp.replace(grid=voxgrid)
-
-    voxgrid.display_as_o3d(attrmanager=plt.get_cmap("gist_rainbow"))
-
-
-import plotly.graph_objects as go
-def plotly_v(v, show=False):
-    N = v.shape[0]
-
-    v = np.asarray(v).flatten()
-
-    X, Y, Z = np.mgrid[0:1:N*1j, 0:1:N*1j, 0:1:N*1j]
-
-    fig = go.Figure(data=go.Volume(
-        x=X.flatten(),
-        y=Y.flatten(),
-        z=Z.flatten(),
-        value=v,
-        isomin=0.1,
-        isomax=1.0,
-        opacity=0.1,  # needs to be small to see through all surfaces
-        surface_count=17,  # needs to be a large number for good volume rendering
-    ))
-
-    if show:
-        fig.show()
-    return plotly.io.to_html(fig)
+def horizontal_symmetry(pcd_points: jnp.ndarray):
+    """
+    Flips the point cloud horizontally (along the X-axis).
+    """
+    # Flip the X-coordinates
+    return pcd_points * jnp.array([-1, 1, 1])
 
 
+def vertical_symmetry(pcd_points: jnp.ndarray):
+    """
+    Flips the point cloud vertically (along the Y-axis).
+    """
+    # Flip the Y-coordinates
+    return pcd_points * jnp.array([1, -1, 1])
 
-def vis_v(v):
-    return visualize_voxgrid(v)
-    m = p == 0.33
-    return vis_pm(p,m)
+
+def depthwise_symmetry(pcd_points: jnp.ndarray):
+    """
+    Flips the point cloud depthwise (along the Z-axis).
+    """
+    # Flip the Z-coordinates
+    return pcd_points * jnp.array([1, 1, -1])
 
 
-def vis_pm(p,m):
-    return visualize_pcd(pc_to_pcd(p, bool_ifelse(m, jnp.array([1,0,0]), jnp.array([0,0,1]))))
+def symmetries(key, pcd_points: jnp.ndarray):
+    do_hor, do_ver, do_dep = jax.random.uniform(key, shape=(3,), minval=0, maxval=1) > 0.5
 
-import open3d as o3d
-def visualize_pcd(pcd):
 
-    visualizer = o3d.visualization.Visualizer()
-    visualizer.create_window()
-    visualizer.add_geometry(pcd)
-    visualizer.poll_events()
-    visualizer.update_renderer()
+    horflip = bool_ifelse(do_hor, horizontal_symmetry(pcd_points), pcd_points)
+    verflip = bool_ifelse(do_hor, vertical_symmetry(horflip), horflip)
+    depflip = bool_ifelse(do_hor, depthwise_symmetry(verflip), verflip)
 
-    try:
-        visualizer.run()
-    except KeyboardInterrupt:
-        pass
+    return depflip
+
+
+def random_3drot(key, pcd_points: jnp.ndarray):
+    def random_rotation_matrix(key):
+        """Generates a random 3D rotation matrix using JAX."""
+        angles = jax.random.uniform(key, shape=(3,), minval=0.0, maxval=2 * jnp.pi)
+        rot_x = R.from_euler('x', angles[0]).as_matrix()
+        rot_y = R.from_euler('y', angles[1]).as_matrix()
+        rot_z = R.from_euler('z', angles[2]).as_matrix()
+        return rot_z @ rot_y @ rot_x  # Combined rotation matrix
+
+    rot_matrix = random_rotation_matrix(key)
+    return jnp.dot(pcd_points, rot_matrix.T)
