@@ -1,0 +1,8 @@
+latent_size: 128
+
+encoder:
+  type: conv3d
+  skip_firstlast: false
+decoder:
+  type: conv3d
+  skip_firstlast: false

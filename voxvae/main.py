@@ -8,7 +8,7 @@ import optax
 import wandb
 
 from voxvae.dataloading.dataloader import get_dataloaders
-from voxvae.training.model import Autoencoder
+from voxvae.training.model import Autoencoder, build_model
 
 from voxvae.training.train import train
 from voxvae.utils.wandb_hydra import wandb_init
@@ -37,7 +37,7 @@ def main(cfg):
     # Initialize model and optimizer
     key = jax.random.PRNGKey(cfg["meta"].seed)
     key, rng = jax.random.split(key)
-    model = Autoencoder(rng, cfg.dataloader.grid_size, cfg.model.latent_size, use_onehot=cfg.datarep.onehot)
+    model = build_model(rng, cfg.dataloader.grid_size, cfg.datarep.onehot, cfg.model)
 
     if cfg.optimizer.type == "adam":
         optimizer = optax.adam(learning_rate=cfg.optimizer.learning_rate)

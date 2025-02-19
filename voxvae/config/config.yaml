@@ -1,9 +1,9 @@
 
 defaults:
-  - model: autoencoder
+  - model: conv3d_firstlast_autoencoder
   - train: train
   - optimizer: adam
   - dataloader: dataloader
   - meta: meta
   - evaltest: evaltest
-  - datarep: continuous
+  - datarep: onehot
