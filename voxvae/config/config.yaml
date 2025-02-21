@@ -1,6 +1,6 @@
 
 defaults:
-  - model: conv3d_firstlast_autoencoder
+  - model: resconv3d_autoencoder
   - train: train
   - optimizer: adam
   - dataloader: dataloader

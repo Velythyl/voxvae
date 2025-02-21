@@ -3,7 +3,7 @@ import numpy as np
 import wandb
 
 from voxvae.pcd.pcd_vis import plotly_v
-from voxvae.training.model import prepare_batch
+from voxvae.training.models.prepare_batch import prepare_batch
 
 import jax.numpy as jnp
 import equinox as eqx
@@ -39,22 +39,30 @@ def get_vis(model, x, prefix, midfix=""):
         f"{prefix}/{midfix}_pred": wandb.Html(plotly_v(model.call_shunt(x[None, :, :, :])))
     }
 
-def metrics(key, model, loader, prefix):
-    _, first_batch = loader.get_batch_(key)
-    first_item = first_batch[0]
+def vis(key, model, loader, prefix):
+    for i in range(loader.num_batch_per_epoch):
+        loader, batch = loader.get_batch_(key)
+        if i == 0:
+            first_element = batch[0]
+    last_element = batch[-1]
 
+    dico = get_vis(model, first_element, prefix, "A")
+    dico.update(get_vis(model, last_element, prefix, "B"))
+    return dico
+
+def metrics(key, model, loader, prefix, loss_fn):
     accs_nonzero = []
     accs_full = []
+    losses = []
     for _ in range(loader.num_batch_per_epoch):
         loader, batch = loader.get_batch_(key)
         accs_nonzero.append(accuracy_nonzero_voxels(model, batch))
         accs_full.append(accuracy(model, batch))
+        losses.append(loss_fn(model, prepare_batch(batch)))
 
-    dico = get_vis(model, first_item, prefix, "A")
-    dico.update(
-        get_vis(model, first_item, prefix, "B"),
-    )
+    dico = {}
     dico[f"{prefix}/acc_nonzero"] = np.mean(np.array(accs_nonzero))
     dico[f"{prefix}/acc_full"] = np.mean(np.array(accs_full))
+    dico[f"{prefix}/losses"] = np.mean(np.array(losses))
 
     return dico

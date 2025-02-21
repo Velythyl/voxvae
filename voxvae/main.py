@@ -8,7 +8,7 @@ import optax
 import wandb
 
 from voxvae.dataloading.dataloader import get_dataloaders
-from voxvae.training.model import Autoencoder, build_model
+from voxvae.training.models.autoencoder import build_model
 
 from voxvae.training.train import train
 from voxvae.utils.wandb_hydra import wandb_init
@@ -45,7 +45,7 @@ def main(cfg):
         raise NotImplementedError(f"Optimizer {cfg.optimizer.type} is not supported")
 
     # Train the model
-    trained_model = train(key, model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, log_freq=cfg.evaltest.log_freq, use_onehot=cfg.datarep.onehot)
+    trained_model = train(key, model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, evaltestcfg=cfg.evaltest, use_onehot=cfg.datarep.onehot)
 
     eqx.tree_serialise_leaves("trained.eqx", trained_model)
 

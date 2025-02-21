@@ -6,8 +6,8 @@ import equinox as eqx
 import wandb
 from jax._src.tree_util import Partial
 
-from voxvae.training.metrics import metrics
-from voxvae.training.model import prepare_batch
+from voxvae.training.metrics import metrics, vis
+from voxvae.training.models.prepare_batch import prepare_batch
 
 
 # Loss function
@@ -72,7 +72,7 @@ def train_step(loss_func: Partial, optimizer, model, opt_state, x):
     return model, opt_state, loss
 
 # Training loop
-def train(key, model, splitloaders, optimizer, num_epochs, log_freq, use_onehot):
+def train(key, model, splitloaders, optimizer, num_epochs, evaltestcfg, use_onehot):
     train_dl = splitloaders.train
     val_dl = splitloaders.val
     test_dl = splitloaders.test
@@ -92,11 +92,19 @@ def train(key, model, splitloaders, optimizer, num_epochs, log_freq, use_onehot)
 
         epoch_loss = epoch_loss / train_dl.num_batch_per_epoch
 
-        if epoch % log_freq == 0:
+        wandb_dict = {}
+        if epoch % evaltestcfg.metrics_log_freq == 0:
             key, rng = jax.random.split(key)
-            wandb_dict = metrics(rng, model, test_dl, "test")
-            wandb_dict.update(metrics(rng, model, val_dl, "val"))
+            wandb_dict.update(metrics(rng, model, test_dl, "test", loss_func))
+            wandb_dict.update(metrics(rng, model, val_dl, "val", loss_func))
             wandb_dict["train/loss"] = epoch_loss
+
+        if epoch % evaltestcfg.vis_log_freq == 0:
+            key, rng = jax.random.split(key)
+            wandb_dict.update(vis(rng, model, test_dl, "test"))
+            wandb_dict.update(vis(rng, model, val_dl, "val"))
+
+        if len(wandb_dict) > 0:
             wandb.log(wandb_dict)
 
         print(f"Epoch {epoch + 1}, Loss: {epoch_loss}")

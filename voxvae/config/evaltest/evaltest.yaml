@@ -1,2 +1,3 @@
-batch_size: 128
-log_freq: 10
+
+metrics_log_freq: 10
+vis_log_freq: 1000
