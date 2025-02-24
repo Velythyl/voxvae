@@ -96,12 +96,14 @@ def train(key, model, splitloaders, optimizer, num_epochs, evaltestcfg, use_oneh
         if epoch % evaltestcfg.metrics_log_freq == 0:
             key, rng = jax.random.split(key)
             wandb_dict.update(metrics(rng, model, test_dl, "test", loss_func))
+            key, rng = jax.random.split(key)
             wandb_dict.update(metrics(rng, model, val_dl, "val", loss_func))
             wandb_dict["train/loss"] = epoch_loss
 
         if epoch % evaltestcfg.vis_log_freq == 0:
             key, rng = jax.random.split(key)
             wandb_dict.update(vis(rng, model, test_dl, "test"))
+            key, rng = jax.random.split(key)
             wandb_dict.update(vis(rng, model, val_dl, "val"))
 
         if len(wandb_dict) > 0:

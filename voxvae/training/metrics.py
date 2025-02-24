@@ -34,9 +34,20 @@ def accuracy(model, batch):
 
 
 def get_vis(model, x, prefix, midfix=""):
+    pred_x = model.call_shunt(x[None, :, :, :])
+
+    min, max = x.min(), x.max()
+    assert min == 0
+    x = x / max
+
+    _min, _max = pred_x.min(), pred_x.max()
+    assert _min == 0
+    assert _max <= max
+    pred_x = pred_x / max
+
     return {
         f"{prefix}/{midfix}_gt": wandb.Html(plotly_v(x)),
-        f"{prefix}/{midfix}_pred": wandb.Html(plotly_v(model.call_shunt(x[None, :, :, :])))
+        f"{prefix}/{midfix}_pred": wandb.Html(plotly_v(pred_x))
     }
 
 def vis(key, model, loader, prefix):
