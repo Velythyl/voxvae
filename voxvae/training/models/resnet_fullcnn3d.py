@@ -10,7 +10,7 @@ class ResidualBlock3D(eqx.Module):
     conv2: eqx.nn.Conv3d
     activation: callable
 
-    def __init__(self, in_channels, out_channels, key, activation=jax.nn.swish):
+    def __init__(self, in_channels, out_channels, key, activation=jax.nn.relu):
         key1, key2 = jax.random.split(key)
         self.conv1 = eqx.nn.Conv3d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, key=key1)
         self.conv2 = eqx.nn.Conv3d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, key=key2)
@@ -34,23 +34,23 @@ class ResConv3D_Encoder(eqx.Module):
         # Initial convolution layers
         self.conv_layers = [
             eqx.nn.Conv3d(1, 32, kernel_size=3, stride=2, padding=1, key=keys[0]),
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(32, 32, key=keys[1]),
             eqx.nn.Conv3d(32, 64, kernel_size=3, stride=2, padding=1, key=keys[2]),
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(64, 64, key=keys[3]),
             eqx.nn.Conv3d(64, 128, kernel_size=3, stride=2, padding=1, key=keys[4]),
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(128, 128, key=keys[5]),
         ]
 
         # Fully convolutional embedding with spatial reduction
         self.embed_layers = [
             eqx.nn.Conv3d(128, 256, kernel_size=3, stride=2, padding=1, key=keys[6]),  # 256x2x2x2
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(256, 256, key=keys[5]),
             eqx.nn.Conv3d(256, 512, kernel_size=3, stride=2, padding=1, key=keys[7]),  # 512x1x1x1
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(512, 512, key=keys[5]),
             eqx.nn.Conv3d(512, L, kernel_size=1, key=keys[8]),  # Lx1x1x1
         ]
@@ -77,19 +77,19 @@ class ResConv3D_Decoder(eqx.Module):
 
         self.layers = [
             eqx.nn.ConvTranspose3d(L, 256, kernel_size=1, key=keys[0]),  # 512x1x1x1
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(256, 256, key=keys[1]),
             eqx.nn.ConvTranspose3d(256, 512, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[2]),  # 256x2x2x2
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(512, 512, key=keys[4]),
             eqx.nn.ConvTranspose3d(512, 128, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[5]),  # 128x4x4x4
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(128, 128, key=keys[6]),
             eqx.nn.ConvTranspose3d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[7]),  # 64x8x8x8
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(64, 64, key=keys[8]),
             eqx.nn.ConvTranspose3d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[8]),  # 32x16x16x16
-            jax.nn.swish,
+            jax.nn.relu,
             ResidualBlock3D(32, 32, key=keys[10]),
             eqx.nn.ConvTranspose3d(32, final_output_channels, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[11]),  # Final output
         ]
