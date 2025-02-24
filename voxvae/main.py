@@ -1,4 +1,5 @@
 import shutil
+import signal
 
 import hydra
 import jax
