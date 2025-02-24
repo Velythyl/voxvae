@@ -1,6 +1,6 @@
 
 defaults:
-  - model: resconv3d_autoencoder
+  - model: resfullconv3d
   - train: train
   - optimizer: adam
   - dataloader: dataloader

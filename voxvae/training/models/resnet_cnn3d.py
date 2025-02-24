@@ -29,7 +29,7 @@ class ResConv3D_Encoder(eqx.Module):
     conv_layers: list
     embed_layers: list
 
-    def __init__(self, key, N, L):
+    def __init__(self, key, N, L, deeper_embed=False):
         _, keys = split_key(key, 7)
 
         # Initial convolution layer
@@ -45,11 +45,23 @@ class ResConv3D_Encoder(eqx.Module):
             ResidualBlock3D(128, 128, key=keys[5]),
         ]
 
-        # Flatten and embed
-        self.embed_layers = [
-            lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
-            eqx.nn.Linear(128 * (N // 8) ** 3, L, key=keys[6]),
-        ]
+        if not deeper_embed:
+            # Flatten and embed
+            self.embed_layers = [
+                lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
+                eqx.nn.Linear(128 * (N // 8) ** 3, L, key=keys[6]),
+            ]
+        else:
+            _, last_keys = split_key(keys[6], 3)
+            # Flatten and embed
+            self.embed_layers = [
+                lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
+                eqx.nn.Linear(128 * (N // 8) ** 3, 512, key=last_keys[0]),
+                jax.nn.swish,
+                eqx.nn.Linear(512, 256, key=last_keys[1]),
+                jax.nn.swish,
+                eqx.nn.Linear(256, L, key=last_keys[2]),
+            ]
 
     def __call__(self, x):
         for layer in self.conv_layers:
@@ -63,7 +75,7 @@ class ResConv3D_Decoder(eqx.Module):
     layers: list
     use_softmax: bool
 
-    def __init__(self, key, N, L, use_onehot=False):
+    def __init__(self, key, N, L, use_onehot=False, deeper_embed=False):
         self.use_softmax = use_onehot
         _, keys = split_key(key, 7)
 
@@ -72,10 +84,26 @@ class ResConv3D_Decoder(eqx.Module):
         else:
             final_output_channels = 1  # For regression
 
-        self.layers = [
-            eqx.nn.Linear(L, 128 * (N // 8) ** 3, key=keys[0]),
-            lambda x: jnp.reshape(x, (128, N // 8, N // 8, N // 8)),
-            jax.nn.swish,
+        if not deeper_embed:
+            self.layers = [
+                eqx.nn.Linear(L, 128 * (N // 8) ** 3, key=keys[0]),
+                lambda x: jnp.reshape(x, (128, N // 8, N // 8, N // 8)),
+                jax.nn.swish,
+            ]
+        else:
+            _, last_keys = split_key(keys[0], 3)
+            # Flatten and embed
+            self.layers = [
+                eqx.nn.Linear(L, 256, key=last_keys[2]),
+                jax.nn.swish,
+                eqx.nn.Linear(256, 512, key=last_keys[1]),
+                jax.nn.swish,
+                eqx.nn.Linear(512, 128 * (N // 8) ** 3, key=last_keys[0]),
+                lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
+                jax.nn.swish,
+            ]
+
+        self.layers = self.layers + [
             ResidualBlock3D(128, 128, key=keys[1]),
             eqx.nn.ConvTranspose3d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[2]),
             jax.nn.swish,

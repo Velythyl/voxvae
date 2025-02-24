@@ -15,7 +15,7 @@ import numpy as np
 from flax import struct
 import jax.numpy as jnp
 
-from voxvae.utils.jaxutils import bool_ifelse, map_ternary
+from voxvae.utils.jaxutils import bool_ifelse, map_ternary, split_key
 from voxvae.pcd.pcd_vis import vis_pm
 from voxvae.pcd.pcd_utils import pc_marshall, p_rescale_01, random_3drot
 
@@ -88,6 +88,7 @@ class DL:
     empty_voxgrid: VoxGrid
 
     shuf: jnp.ndarray
+    num_shuf: int = struct.field(pytree_node=False)
     shuf_idx: int = struct.field(pytree_node=False)
 
     batch_size: int = struct.field(pytree_node=False)
@@ -102,10 +103,12 @@ class DL:
     def voxel_size(self):
         return self.empty_voxgrid.voxel_size
 
+
+
     @classmethod
     def create(cls, dataset, batch_size, grid_size, augment_data=random_3drot, pcd_is: float = 0.33, pcd_isnotis: float = 0.66, pcd_isnot: float = 0.99) -> Self:
-        if batch_size > len(dataset):
-            batch_size = len(dataset)
+        num_shuf = (batch_size // len(dataset)) + 1
+
 
         temp = cls(
             dataset=dataset,
@@ -113,7 +116,8 @@ class DL:
             grid_size=grid_size,
             augment_data=Partial(augment_data),
             empty_voxgrid=jaxvox.VoxGrid.build_from_bounds(jnp.ones(3) * 0, jnp.ones(3) * 1, voxel_size=1/grid_size),
-            shuf=jnp.arange(len(dataset)),
+            num_shuf=num_shuf,
+            shuf=None,
             dataset_len=len(dataset),
             shuf_idx=0, pcd_is=pcd_is, pcd_isnotis=pcd_isnotis, pcd_isnot=pcd_isnot)
 
@@ -149,11 +153,16 @@ class DL:
 
     @jax.jit
     def _shuf(self, key):
-        shuf = jax.random.choice(key, jnp.arange(self.dataset_len, dtype=jnp.int32), replace=False, shape=(self.dataset_len,))
+        total_shuf_length = self.dataset_len * self.num_shuf
 
-        num_batches = self.dataset_len // self.batch_size
-        shuf = shuf[:int(num_batches * self.batch_size)]
-        shuf = shuf.reshape((num_batches, self.batch_size))
+        def one_shuf(key):
+            return jax.random.choice(key, jnp.arange(self.dataset_len, dtype=jnp.int32), replace=False, shape=(self.dataset_len,))
+        _, keys = split_key(key, self.num_shuf)
+        shuf = jax.vmap(one_shuf)(keys).flatten()
+
+        num_batches_in_shuf = total_shuf_length // self.batch_size
+        shuf = shuf[:int(num_batches_in_shuf * self.batch_size)]
+        shuf = shuf.reshape((num_batches_in_shuf, self.batch_size))
 
         return shuf
 

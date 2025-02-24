@@ -30,7 +30,7 @@ def build_model(key, grid_size, use_onehot, model_cfg):
         encoder = cnn3d.Conv3D_Encoder(key, grid_size, model_cfg.latent_size, skip_firstlast=model_cfg.encoder.skip_firstlast)
     elif model_cfg.encoder.type == "resconv3d":
         key, rng = jax.random.split(key)
-        encoder = resnet_cnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size)
+        encoder = resnet_cnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size, deeper_embed=model_cfg.encoder.deeper_embed)
     elif model_cfg.encoder.type == "resfullconv3d":
         key, rng = jax.random.split(key)
         encoder = resnet_fullcnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size)
@@ -40,7 +40,7 @@ def build_model(key, grid_size, use_onehot, model_cfg):
         decoder = cnn3d.Conv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
     elif model_cfg.decoder.type == "resconv3d":
         key, rng = jax.random.split(key)
-        decoder = resnet_cnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
+        decoder = resnet_cnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot, deeper_embed=model_cfg.encoder.deeper_embed)
     elif model_cfg.decoder.type == "resfullconv3d":
         key, rng = jax.random.split(key)
         decoder = resnet_fullcnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)

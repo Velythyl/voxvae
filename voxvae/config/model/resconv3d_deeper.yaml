@@ -1,0 +1,8 @@
+latent_size: 128
+
+encoder:
+  type: resconv3d
+  deeper_embed: True
+decoder:
+  type: resconv3d
+  deeper_embed: True

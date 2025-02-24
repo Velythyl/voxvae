@@ -68,7 +68,7 @@ class ResConv3D_Decoder(eqx.Module):
 
     def __init__(self, key, N, L, use_onehot=False):
         self.use_softmax = use_onehot
-        _, keys = split_key(key, 9)  # Increase the number of keys for additional layers
+        _, keys = split_key(key, 11)  # Increase the number of keys for additional layers
 
         if use_onehot:
             final_output_channels = 4  # For classification
@@ -76,20 +76,22 @@ class ResConv3D_Decoder(eqx.Module):
             final_output_channels = 1  # For regression
 
         self.layers = [
-            eqx.nn.Conv3d(L, 512, kernel_size=1, key=keys[0]),  # 512x1x1x1
+            eqx.nn.ConvTranspose3d(L, 256, kernel_size=1, key=keys[0]),  # 512x1x1x1
             jax.nn.swish,
-            eqx.nn.ConvTranspose3d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[1]),  # 256x2x2x2
+            ResidualBlock3D(256, 256, key=keys[1]),
+            eqx.nn.ConvTranspose3d(256, 512, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[2]),  # 256x2x2x2
             jax.nn.swish,
-            eqx.nn.ConvTranspose3d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[2]),  # 128x4x4x4
+            ResidualBlock3D(512, 512, key=keys[4]),
+            eqx.nn.ConvTranspose3d(512, 128, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[5]),  # 128x4x4x4
             jax.nn.swish,
-            ResidualBlock3D(128, 128, key=keys[3]),
-            eqx.nn.ConvTranspose3d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[4]),  # 64x8x8x8
+            ResidualBlock3D(128, 128, key=keys[6]),
+            eqx.nn.ConvTranspose3d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[7]),  # 64x8x8x8
             jax.nn.swish,
-            ResidualBlock3D(64, 64, key=keys[5]),
-            eqx.nn.ConvTranspose3d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[6]),  # 32x16x16x16
+            ResidualBlock3D(64, 64, key=keys[8]),
+            eqx.nn.ConvTranspose3d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[8]),  # 32x16x16x16
             jax.nn.swish,
-            ResidualBlock3D(32, 32, key=keys[7]),
-            eqx.nn.ConvTranspose3d(32, final_output_channels, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[8]),  # Final output
+            ResidualBlock3D(32, 32, key=keys[10]),
+            eqx.nn.ConvTranspose3d(32, final_output_channels, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[11]),  # Final output
         ]
 
     def __call__(self, x):
