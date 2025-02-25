@@ -30,7 +30,7 @@ class ResConv3D_Encoder(eqx.Module):
     embed_layers: list
 
     def __init__(self, key, N, L, deeper_embed=False):
-        _, keys = split_key(key, 7)
+        _, keys = split_key(key, 8)
 
         # Initial convolution layer
         self.conv_layers = [
@@ -43,6 +43,7 @@ class ResConv3D_Encoder(eqx.Module):
             eqx.nn.Conv3d(64, 128, kernel_size=3, stride=2, padding=1, key=keys[4]),
             jax.nn.swish,
             ResidualBlock3D(128, 128, key=keys[5]),
+
         ]
 
         if not deeper_embed:
@@ -55,10 +56,12 @@ class ResConv3D_Encoder(eqx.Module):
             _, last_keys = split_key(keys[6], 3)
             # Flatten and embed
             self.embed_layers = [
-                lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
-                eqx.nn.Linear(128 * (N // 8) ** 3, 512, key=last_keys[0]),
+                eqx.nn.Conv3d(128, 256, kernel_size=3, stride=2, padding=1, key=keys[5]),  # 256x2x2x2
                 jax.nn.swish,
-                eqx.nn.Linear(512, L, key=last_keys[2]),
+                eqx.nn.Conv3d(256, 512, kernel_size=3, stride=2, padding=1, key=keys[6]),  # 512x1x1x1
+                jax.nn.swish,
+                lambda x: x.squeeze(),
+                eqx.nn.Linear(512, L, key=last_keys[7]),
             ]
 
     def __call__(self, x):
@@ -93,9 +96,11 @@ class ResConv3D_Decoder(eqx.Module):
             # Flatten and embed
             self.layers = [
                 eqx.nn.Linear(L, 512, key=last_keys[2]),
+                lambda x: x[:,None,None,None],
                 jax.nn.swish,
-                eqx.nn.Linear(512, 128 * (N // 8) ** 3, key=last_keys[0]),
-                lambda x: jnp.reshape(x, (x.shape[0], -1)).reshape(128 * (N // 8) ** 3),
+                eqx.nn.ConvTranspose3d(512, 256, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[1]),
+                jax.nn.swish,
+                eqx.nn.ConvTranspose3d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1, key=keys[2]),
                 jax.nn.swish,
             ]
 

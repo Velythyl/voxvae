@@ -1,6 +1,6 @@
 
 defaults:
-  - model: fullconv3d
+  - model: resconv3d_deeper
   - train: train
   - optimizer: adamw
   - dataloader: dataloader
