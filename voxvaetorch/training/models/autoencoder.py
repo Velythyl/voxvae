@@ -7,6 +7,7 @@ from voxvaetorch.training.models import fca
 
 def call_shunt(model, batch):
     pred_batch = model(batch)
+    #pred_batch = torch.nn.functional.log_softmax(pred_batch, dim=1)
     return torch.argmax(pred_batch, dim=1)
 
 def build_model(model_cfg):

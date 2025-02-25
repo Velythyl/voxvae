@@ -14,32 +14,32 @@ class Autoencoder(nn.Module):
         # Encoder
         self.encoder = nn.Sequential(
             nn.Conv3d(input_shape[0], 32, kernel_size=3, stride=2, padding=1),  # (C, D, H, W) -> (32, D/2, H/2, W/2)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv3d(32, 64, kernel_size=3, stride=2, padding=1),  # (32, D/2, H/2, W/2) -> (64, D/4, H/4, W/4)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv3d(64, 128, kernel_size=3, stride=2, padding=1),  # (64, D/4, H/4, W/4) -> (128, D/8, H/8, W/8)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv3d(128, 256, kernel_size=3, stride=2, padding=1),  # (128, D/8, H/8, W/8) -> (256, D/16, H/16, W/16)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Conv3d(256, latent_size, kernel_size=3, stride=2, padding=1),
             # (256, D/16, H/16, W/16) -> (L, D/32, H/32, W/32)
-            nn.ReLU()
+            nn.LeakyReLU()
         )
 
         # Decoder
         self.decoder = nn.Sequential(
             nn.ConvTranspose3d(latent_size, 256, kernel_size=3, stride=2, padding=1, output_padding=1),
             # (L, D/32, H/32, W/32) -> (256, D/16, H/16, W/16)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.ConvTranspose3d(256, 128, kernel_size=3, stride=2, padding=1, output_padding=1),
             # (256, D/16, H/16, W/16) -> (128, D/8, H/8, W/8)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.ConvTranspose3d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
             # (128, D/8, H/8, W/8) -> (64, D/4, H/4, W/4)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.ConvTranspose3d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
             # (64, D/4, H/4, W/4) -> (32, D/2, H/2, W/2)
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.ConvTranspose3d(32, num_classes, kernel_size=3, stride=2, padding=1, output_padding=1),
             # (32, D/2, H/2, W/2) -> (num_classes, D, H, W)
         )
@@ -51,7 +51,7 @@ class Autoencoder(nn.Module):
         # Decode
         logits = self.decoder(latent)  # Output logits (before softmax)
 
-        return torch.nn.functional.log_softmax(logits, dim=1)
+        return logits
 
     def get_latent(self, x):
         return self.encoder(x)
