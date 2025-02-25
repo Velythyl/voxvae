@@ -67,7 +67,7 @@ def cat_loss_fn(proportions, model, x):
 def train_step(loss_func: Partial, optimizer, model, opt_state, x):
     x = prepare_batch(x)
     loss, grads = eqx.filter_value_and_grad(loss_func)(model, x)
-    updates, opt_state = optimizer.update(grads, opt_state)
+    updates, opt_state = optimizer.update(grads, opt_state, eqx.filter(model, eqx.is_inexact_array))
     model = eqx.apply_updates(model, updates)
     return model, opt_state, loss
 

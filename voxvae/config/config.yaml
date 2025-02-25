@@ -2,7 +2,7 @@
 defaults:
   - model: fullconv3d
   - train: train
-  - optimizer: adam
+  - optimizer: adamw
   - dataloader: dataloader
   - meta: meta
   - evaltest: evaltest

@@ -46,8 +46,16 @@ def main(cfg):
 
     if cfg.optimizer.type == "adam":
         optimizer = optax.adam(learning_rate=cfg.optimizer.learning_rate)
+    elif cfg.optimizer.type == "adamw":
+        optimizer = optax.adamw(learning_rate=cfg.optimizer.learning_rate)
     else:
         raise NotImplementedError(f"Optimizer {cfg.optimizer.type} is not supported")
+
+    if cfg.optimizer.clip_by_global_norm:
+        optimizer = optax.chain(
+            optax.clip_by_global_norm(cfg.optimizer.clip_by_global_norm),
+            optimizer
+        )
 
     # Train the model
     trained_model = train(key, model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, evaltestcfg=cfg.evaltest, use_onehot=cfg.datarep.onehot)
