@@ -3,7 +3,7 @@ from typing import Any
 import equinox as eqx
 import jax
 
-from voxvae.training.models import cnn3d, resnet_cnn3d, resnet_fullcnn3d
+from voxvae.training.models import cnn3d, resnet_cnn3d, resnet_fullcnn3d, fullcnn3d
 
 
 class Autoencoder(eqx.Module):
@@ -28,6 +28,9 @@ def build_model(key, grid_size, use_onehot, model_cfg):
     if model_cfg.encoder.type == "conv3d":
         key, rng = jax.random.split(key)
         encoder = cnn3d.Conv3D_Encoder(key, grid_size, model_cfg.latent_size, skip_firstlast=model_cfg.encoder.skip_firstlast)
+    elif model_cfg.encoder.type == "fullconv3d":
+        key, rng = jax.random.split(key)
+        encoder = fullcnn3d.Conv3D_Encoder(key, grid_size, model_cfg.latent_size)
     elif model_cfg.encoder.type == "resconv3d":
         key, rng = jax.random.split(key)
         encoder = resnet_cnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size, deeper_embed=model_cfg.encoder.deeper_embed)
@@ -38,6 +41,9 @@ def build_model(key, grid_size, use_onehot, model_cfg):
     if model_cfg.decoder.type == "conv3d":
         key, rng = jax.random.split(key)
         decoder = cnn3d.Conv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
+    elif model_cfg.decoder.type == "fullconv3d":
+        key, rng = jax.random.split(key)
+        decoder = fullcnn3d.Conv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
     elif model_cfg.decoder.type == "resconv3d":
         key, rng = jax.random.split(key)
         decoder = resnet_cnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot, deeper_embed=model_cfg.encoder.deeper_embed)

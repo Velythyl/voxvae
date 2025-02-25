@@ -1,0 +1,6 @@
+latent_size: 128
+
+encoder:
+  type: fullconv3d
+decoder:
+  type: fullconv3d
