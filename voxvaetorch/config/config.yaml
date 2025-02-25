@@ -1,0 +1,9 @@
+
+defaults:
+  - model: fca
+  - train: train
+  - optimizer: adam
+  - dataloader: dataloader
+  - meta: meta
+  - evaltest: evaltest
+  - datarep: onehot
