@@ -1,9 +1,13 @@
 from jax import numpy as jnp
 
+def NormalizeData(data, min=0):
+    return (data - min) / (jnp.max(data) - min)
 
 def prepare_batch(x):
     if len(x.shape) == 3:
-        return x[None, :, :, :]
-    if len(x.shape) == 4:
+        x = x[None, :, :, :]
+    elif len(x.shape) == 4:
         x = jnp.expand_dims(x, axis=1)  # Add channel dimension
-        return x
+    # makes arrays 0-1
+    #x = NormalizeData(x, min=0)
+    return x
