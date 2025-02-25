@@ -14,11 +14,9 @@ def main(cfg):
 
     wandb_init(cfg)
 
-
-
-    def exit_self(self, signum: int, frame = None) -> None: # fixme mila cluster weird
-        exit(0) # exit normally
-    signal.signal(signal.SIGTERM, exit_self)
+    #def exit_self(self, signum: int, frame = None) -> None: # fixme mila cluster weird
+    #    exit(0) # exit normally
+    #signal.signal(signal.SIGTERM, exit_self)
 
     if cfg.datarep.onehot:
         values = [cfg.datarep.pcd_is, cfg.datarep.pcd_isnotis, cfg.datarep.pcd_isnot]

@@ -60,7 +60,7 @@ class PointCloudDataset(Dataset):
         self.json_files = json_paths
 
         # Load all JSON files and store the point clouds and colors
-        num_workers = mp.cpu_count() - 2
+        num_workers = max(mp.cpu_count() - 4, 1)
         with mp.Pool(num_workers) as pool:
             jsons = list(
                 tqdm(
