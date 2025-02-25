@@ -1,5 +1,6 @@
 import shutil
 import signal
+import sys
 
 import hydra
 import numpy as np
@@ -10,6 +11,8 @@ import wandb
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
 def main(cfg):
+    sys.stderr = sys.stdout
+
     from voxvaetorch.utils.wandb_hydra import wandb_init
 
     wandb_init(cfg)
