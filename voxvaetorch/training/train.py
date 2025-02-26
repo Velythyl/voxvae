@@ -19,7 +19,7 @@ def train_step(loss_func, optimizer, model, x):
     return loss.item()
 
 # Training loop
-def train(model, splitloaders, optimizer, num_epochs, evaltestcfg, device=torch.device('cuda')):
+def train(model, splitloaders, optimizer, num_epochs, use_weighted_loss, evaltestcfg, device=torch.device('cuda')):
     train_dl = splitloaders.train
     val_dl = splitloaders.val
     test_dl = splitloaders.test
@@ -28,7 +28,7 @@ def train(model, splitloaders, optimizer, num_epochs, evaltestcfg, device=torch.
     proportions = torch.tensor([splitloaders.prop_empty, splitloaders.prop_is, splitloaders.prop_isnotis, splitloaders.prop_isnot])
     class_weights = 1.0 / (proportions + 1e-8)  # Inverse of class proportions
     class_weights = class_weights.to(device)  # Move weights to the correct device
-    loss_func = nn.CrossEntropyLoss(weight=class_weights)
+    loss_func = nn.CrossEntropyLoss(weight=class_weights if use_weighted_loss else None)
 
     for epoch in range(num_epochs):
         model.train()
