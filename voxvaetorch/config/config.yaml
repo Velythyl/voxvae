@@ -1,6 +1,6 @@
 
 defaults:
-  - model: fca
+  - model: resnet
   - train: train
   - optimizer: adam
   - dataloader: dataloader

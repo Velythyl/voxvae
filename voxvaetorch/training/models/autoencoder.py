@@ -2,7 +2,7 @@ import jax
 import torch
 
 from voxvae.training.models import cnn3d, resnet_cnn3d, resnet_fullcnn3d, fullcnn3d
-from voxvaetorch.training.models import fca
+from voxvaetorch.training.models import fca, resnet
 
 
 def call_shunt(model, batch):
@@ -11,7 +11,9 @@ def call_shunt(model, batch):
     return torch.argmax(pred_batch, dim=1)
 
 def build_model(model_cfg):
-    if model_cfg.type == "fullconv3d":
+    if model_cfg.type == "fca":
         autoencoder = fca.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "resnet":
+        autoencoder = resnet.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
 
     return autoencoder
