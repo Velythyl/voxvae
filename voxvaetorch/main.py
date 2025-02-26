@@ -57,7 +57,7 @@ def main(cfg):
 
     # Train the model
     from voxvaetorch.training.train import train
-    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, evaltestcfg=cfg.evaltest)
+    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, use_weighted_loss=cfg.train.weighted_loss,  evaltestcfg=cfg.evaltest)
 
     wandb.finish()
 

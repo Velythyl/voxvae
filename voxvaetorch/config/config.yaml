@@ -1,7 +1,7 @@
 
 defaults:
-  - model: resnet
-  - train: train
+  - model: fca
+  - train: train_yesW
   - optimizer: adam
   - dataloader: dataloader
   - meta: meta
