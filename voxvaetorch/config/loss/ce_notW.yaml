@@ -1,3 +1,2 @@
-
-num_epochs: 10000
+type: CE
 weighted_loss: False

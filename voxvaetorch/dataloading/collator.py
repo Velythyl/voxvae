@@ -27,9 +27,16 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot):
 
         combined_voxgrid = (grid_is * 1 + grid_isnot * 2)  # {"is": 0.5, "isnotis": 1.5, "isnot: 1}
 
-        combined_voxgrid = map_ternary(combined_voxgrid, (pcd_is, pcd_isnotis, pcd_isnot))
+        CUR_IS = 1
+        CUR_ISNOT = 2
+        CUR_ISNOTIS = 3
 
-        return combined_voxgrid
+        rebuild_grid = empty_voxgrid.grid
+        rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_IS, pcd_is, rebuild_grid)
+        rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOTIS, pcd_isnotis, rebuild_grid)
+        rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOT, pcd_isnot, rebuild_grid)
+
+        return rebuild_grid
 
     def collate_fn(key, points, mask):
         _, keys = split_key(key, points.shape[0])

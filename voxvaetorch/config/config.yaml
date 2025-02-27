@@ -1,7 +1,8 @@
 
 defaults:
   - model: fca
-  - train: train_notW
+  - train: train
+  - loss: fl_yesW
   - optimizer: adam
   - dataloader: dataloader
   - meta: meta
