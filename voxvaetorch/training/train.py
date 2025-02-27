@@ -10,25 +10,18 @@ def train_step(loss_func, optimizer, model, x):
     optimizer.zero_grad()
     output = model(x)
 
-    #output = output.view(x.size(0), 4, -1).transpose(1, 2)
-    #x = x.view(x.size(0), 1, -1).transpose(1, 2)
-
     loss = loss_func(output, x.squeeze(1).long())
     loss.backward()
     optimizer.step()
     return loss.item()
 
 # Training loop
-def train(model, splitloaders, optimizer, num_epochs, use_weighted_loss, evaltestcfg, device=torch.device('cuda')):
+def train(model, splitloaders, optimizer, num_epochs, loss_func, evaltestcfg, device):
     train_dl = splitloaders.train
     val_dl = splitloaders.val
     test_dl = splitloaders.test
 
-    # Use CrossEntropyLoss for classification with class weights
-    proportions = torch.tensor([splitloaders.prop_empty, splitloaders.prop_is, splitloaders.prop_isnotis, splitloaders.prop_isnot])
-    class_weights = 1.0 / (proportions + 1e-8)  # Inverse of class proportions
-    class_weights = class_weights.to(device)  # Move weights to the correct device
-    loss_func = nn.CrossEntropyLoss(weight=class_weights if use_weighted_loss else None)
+
 
     for epoch in range(num_epochs):
         model.train()
@@ -44,7 +37,7 @@ def train(model, splitloaders, optimizer, num_epochs, use_weighted_loss, evaltes
 
         # Logging and evaluation
         wandb_dict = {}
-        if epoch % evaltestcfg.metrics_log_freq == 0:
+        if epoch % evaltestcfg.metrics_log_freq == 0 and epoch > 0: # skip first because loss is super high on first pass
             model.eval()
             with torch.no_grad():
                 wandb_dict.update(metrics(model, test_dl, "test", loss_func))
@@ -52,13 +45,13 @@ def train(model, splitloaders, optimizer, num_epochs, use_weighted_loss, evaltes
             wandb_dict["train/loss"] = epoch_loss
             model.train()
 
-        if epoch % evaltestcfg.vis_log_freq == 0:
+        if epoch % evaltestcfg.vis_log_freq == 0: # keep first to make sure vis works
             model.eval()
             wandb_dict.update(vis( model, test_dl, "test"))
             wandb_dict.update(vis( model, val_dl, "val"))
             model.train()
 
-        if epoch % evaltestcfg.model_log_freq == 0:
+        if epoch % evaltestcfg.model_log_freq == 0 and epoch > 0: # skip first because model is untrained
             model.eval()
             torch.save(model.state_dict(), f"{wandb.run.dir}/trained_{epoch}.pt")
             model.train()

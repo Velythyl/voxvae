@@ -49,6 +49,25 @@ def main(cfg):
     else:
         raise NotImplementedError(f"Optimizer {cfg.optimizer.type} is not supported")
 
+    device=torch.device('cuda')
+    from torch import nn
+
+    if cfg.loss.weighted_loss:
+        # Use CrossEntropyLoss for classification with class weights
+        proportions = torch.tensor(
+            [splitloaders.prop_empty, splitloaders.prop_is, splitloaders.prop_isnotis, splitloaders.prop_isnot])
+        class_weights = 1.0 / (proportions + 1e-8)  # Inverse of class proportions
+        class_weights = class_weights.to(device)  # Move weights to the correct device
+    else:
+        class_weights = None
+
+    if cfg.loss.type == "CE":
+        loss_func = nn.CrossEntropyLoss(weight=class_weights)
+    elif cfg.loss.type == "FL":
+        from voxvaetorch.training.losses.focal_loss import focal_loss
+        loss_func = focal_loss(alpha=class_weights, gamma=cfg.loss.gamma, device=device)
+
+
     #if cfg.optimizer.clip_by_global_norm:
     #    optimizer = optax.chain(
     #        optax.clip_by_global_norm(cfg.optimizer.clip_by_global_norm),
@@ -57,7 +76,7 @@ def main(cfg):
 
     # Train the model
     from voxvaetorch.training.train import train
-    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, use_weighted_loss=cfg.train.weighted_loss,  evaltestcfg=cfg.evaltest)
+    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, loss_func=loss_func,  evaltestcfg=cfg.evaltest, device=device)
 
     wandb.finish()
 
