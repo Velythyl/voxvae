@@ -10,9 +10,6 @@ def train_step(loss_func, optimizer, model, x):
     optimizer.zero_grad()
     output = model(x)
 
-    #output = output.view(x.size(0), 4, -1).transpose(1, 2)
-    #x = x.view(x.size(0), 1, -1).transpose(1, 2)
-
     loss = loss_func(output, x.squeeze(1).long())
     loss.backward()
     optimizer.step()
