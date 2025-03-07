@@ -1,6 +1,6 @@
 
 defaults:
-  - model: fca
+  - model: resnet_upsample
   - train: train
   - loss: fl_yesW
   - optimizer: adam
