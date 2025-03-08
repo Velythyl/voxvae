@@ -2,7 +2,7 @@ import jax
 import torch
 
 from voxvae.training.models import cnn3d, resnet_cnn3d, resnet_fullcnn3d, fullcnn3d
-from voxvaetorch.training.models import fca, resnet, resnet_upsample, resnet_linear
+from voxvaetorch.training.models import fca, resnet, resnet_upsample, resnet_linear, resnet_otherlinear
 
 
 def call_shunt(model, batch):
@@ -19,6 +19,7 @@ def build_model(model_cfg):
         autoencoder = resnet_upsample.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
     elif model_cfg.type == "resnet_linear":
         autoencoder = resnet_linear.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
-
+    elif model_cfg.type == "resnet_otherlinear":
+        autoencoder = resnet_otherlinear.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
 
     return autoencoder
