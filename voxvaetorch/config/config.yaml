@@ -1,6 +1,6 @@
 
 defaults:
-  - model: resnet_upsample
+  - model: resnet_linear
   - train: train
   - loss: fl_yesW
   - optimizer: adam
