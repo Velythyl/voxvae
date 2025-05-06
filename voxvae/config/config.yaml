@@ -1,8 +1,8 @@
 
 defaults:
-  - model: resnet_linear
+  - model: fca
   - train: train
-  - loss: fl_yesW
+  - loss: ce_yesW
   - optimizer: adam
   - dataloader: dataloader
   - meta: meta

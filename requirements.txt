@@ -11,3 +11,4 @@ open3d
 hydra-submitit-launcher
 torch
 git+https://github.com/rdyro/torch2jax.git
+einops

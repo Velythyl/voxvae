@@ -34,10 +34,11 @@ def main(cfg):
     from voxvae.dataloading.dataloader import get_dataloaders
     # Load data
     splitloaders = get_dataloaders(
-        cfg.dataloader.data_path,
-        cfg.dataloader.grid_size,
-        cfg.dataloader.batch_size,
-        cfg.dataloader.fewer_files,
+        root=cfg.dataloader.data_path,
+        grid_size=cfg.dataloader.grid_size,
+        batch_size=cfg.dataloader.batch_size,
+        fewer_files=cfg.dataloader.fewer_files,
+        splits=cfg.dataloader.splits,
         pcd_is=cfg.datarep.pcd_is,
         pcd_isnotis=cfg.datarep.pcd_isnotis,
         pcd_isnot=cfg.datarep.pcd_isnot,
@@ -58,11 +59,7 @@ def main(cfg):
     from torch import nn
 
     if cfg.loss.weighted_loss:
-        # Use CrossEntropyLoss for classification with class weights
-        proportions = torch.tensor(
-            [splitloaders.prop_empty, splitloaders.prop_is, splitloaders.prop_isnotis, splitloaders.prop_isnot])
-        class_weights = 1.0 / (proportions + 1e-8)  # Inverse of class proportions
-        class_weights = class_weights.to(device)  # Move weights to the correct device
+        class_weights = splitloaders.class_weights.to(device=device)
     else:
         class_weights = None
 
