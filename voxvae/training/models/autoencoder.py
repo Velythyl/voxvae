@@ -1,54 +1,23 @@
-from typing import Any
+import torch
 
-import equinox as eqx
-import jax
-
-from voxvae.training.models import cnn3d, resnet_cnn3d, resnet_fullcnn3d, fullcnn3d
+from voxvae.training.models import fca, resnet, resnet_upsample, resnet_linear, resnet_otherlinear
 
 
-class Autoencoder(eqx.Module):
-    encoder: Any
-    decoder: Any
+def call_shunt(model, batch):
+    pred_batch = model(batch)
+    #pred_batch = torch.nn.functional.log_softmax(pred_batch, dim=1)
+    return torch.argmax(pred_batch, dim=1)
 
-    def __init__(self, encoder, decoder):
-        #key1, key2 = jax.random.split(key)
-        self.encoder = encoder #Conv3D_Encoder(key1, N, L)
-        self.decoder = decoder # Conv3D_Decoder(key2, N, L, use_onehot=use_onehot)
+def build_model(model_cfg):
+    if model_cfg.type == "fca":
+        autoencoder = fca.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "resnet":
+        autoencoder = resnet.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "resnet_upsample":
+        autoencoder = resnet_upsample.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "resnet_linear":
+        autoencoder = resnet_linear.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "resnet_otherlinear":
+        autoencoder = resnet_otherlinear.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
 
-    def __call__(self, x):
-        latent = self.encoder(x)
-        return self.decoder(latent)
-
-    def call_shunt(self, x):
-        latent = self.encoder(x)
-        return self.decoder.call_shunt(latent)
-
-
-def build_model(key, grid_size, use_onehot, model_cfg):
-    if model_cfg.encoder.type == "conv3d":
-        key, rng = jax.random.split(key)
-        encoder = cnn3d.Conv3D_Encoder(key, grid_size, model_cfg.latent_size, skip_firstlast=model_cfg.encoder.skip_firstlast)
-    elif model_cfg.encoder.type == "fullconv3d":
-        key, rng = jax.random.split(key)
-        encoder = fullcnn3d.Conv3D_Encoder(key, grid_size, model_cfg.latent_size)
-    elif model_cfg.encoder.type == "resconv3d":
-        key, rng = jax.random.split(key)
-        encoder = resnet_cnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size, deeper_embed=model_cfg.encoder.deeper_embed)
-    elif model_cfg.encoder.type == "resfullconv3d":
-        key, rng = jax.random.split(key)
-        encoder = resnet_fullcnn3d.ResConv3D_Encoder(key, grid_size, model_cfg.latent_size)
-
-    if model_cfg.decoder.type == "conv3d":
-        key, rng = jax.random.split(key)
-        decoder = cnn3d.Conv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
-    elif model_cfg.decoder.type == "fullconv3d":
-        key, rng = jax.random.split(key)
-        decoder = fullcnn3d.Conv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
-    elif model_cfg.decoder.type == "resconv3d":
-        key, rng = jax.random.split(key)
-        decoder = resnet_cnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot, deeper_embed=model_cfg.encoder.deeper_embed)
-    elif model_cfg.decoder.type == "resfullconv3d":
-        key, rng = jax.random.split(key)
-        decoder = resnet_fullcnn3d.ResConv3D_Decoder(key, grid_size, model_cfg.latent_size, use_onehot=use_onehot)
-
-    return Autoencoder(encoder, decoder)
+    return autoencoder

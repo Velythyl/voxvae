@@ -6,8 +6,8 @@ import jaxvox
 import torch
 import torch2jax
 
-from voxvaetorch.pcd.pcd_utils import random_3drot, p_rescale_01
-from voxvaetorch.utils.jaxutils import bool_ifelse, map_ternary, split_key
+from voxvae.pcd.pcd_utils import random_3drot, p_rescale_01
+from voxvae.utils.jaxutils import bool_ifelse, map_ternary, split_key
 
 
 def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot):

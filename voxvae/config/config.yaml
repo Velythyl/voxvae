@@ -1,8 +1,9 @@
 
 defaults:
-  - model: resconv3d_deeper
+  - model: resnet_linear
   - train: train
-  - optimizer: adamw
+  - loss: fl_yesW
+  - optimizer: adam
   - dataloader: dataloader
   - meta: meta
   - evaltest: evaltest

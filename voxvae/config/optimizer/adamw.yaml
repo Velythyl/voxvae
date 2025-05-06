@@ -1,4 +1,0 @@
-
-type: adamw
-learning_rate: 0.001
-clip_by_global_norm: 1.0
