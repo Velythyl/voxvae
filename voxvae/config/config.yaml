@@ -1,8 +1,9 @@
 
 defaults:
-  - model: resconv3d_deeper
+  - model: fca
   - train: train
-  - optimizer: adamw
+  - loss: ce_yesW
+  - optimizer: adam
   - dataloader: dataloader
   - meta: meta
   - evaltest: evaltest

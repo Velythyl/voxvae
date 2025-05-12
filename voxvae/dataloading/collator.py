@@ -6,15 +6,16 @@ import jaxvox
 import torch
 import torch2jax
 
-from voxvaetorch.pcd.pcd_utils import random_3drot, p_rescale_01
-from voxvaetorch.utils.jaxutils import bool_ifelse, map_ternary, split_key
+from voxvae.pcd.pcd_utils import random_3drot, p_rescale_01
+from voxvae.utils.jaxutils import bool_ifelse, map_ternary, split_key
 
 
-def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot):
+def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False):
     empty_voxgrid = jaxvox.VoxGrid.build_from_bounds(jnp.ones(3) * 0, jnp.ones(3) * 1, voxel_size=1 / voxgrid_size)
 
     def handle_singular(key, points, masks):
-        points = random_3drot(key, points)
+        if disable_random_3d_rot is not None:
+            points = random_3drot(key, points)
         points = p_rescale_01(points)
 
         v = empty_voxgrid.point_to_voxel(points)
@@ -37,6 +38,9 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot):
         rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOT, pcd_isnot, rebuild_grid)
 
         return rebuild_grid
+
+    if handle_singular_only:
+        return handle_singular
 
     def collate_fn(key, points, mask):
         _, keys = split_key(key, points.shape[0])

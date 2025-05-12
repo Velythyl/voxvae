@@ -5,8 +5,10 @@ plotly
 jax[cuda12]
 tqdm
 flax
+equinox
 matplotlib
 open3d
 hydra-submitit-launcher
 torch
 git+https://github.com/rdyro/torch2jax.git
+einops
