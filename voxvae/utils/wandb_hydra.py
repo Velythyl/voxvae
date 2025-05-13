@@ -20,7 +20,7 @@ def wandb_init(cfg, meta_key="meta"):
         # entity=cfg.wandb.entity,
         project=cfg[meta_key].project,
         name=cfg[meta_key]["run_name"],  # todo
-        save_code=True,
+        save_code=False,
         settings=wandb.Settings(start_method="thread", code_dir=".."),
         config=omegaconf.OmegaConf.to_container(
             cfg, resolve=True, throw_on_missing=True

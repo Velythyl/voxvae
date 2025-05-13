@@ -1,6 +1,6 @@
 
 defaults:
-  - model: fca
+  - model: vit
   - train: train
   - loss: ce_yesW
   - optimizer: adam
