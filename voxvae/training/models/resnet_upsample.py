@@ -71,6 +71,7 @@ class Autoencoder(nn.Module):
         )
 
     def forward(self, x):
+        assert len(x.shape) == 5
         # Linear embedding
         x = x.permute(0, 2, 3, 4, 1)  # (B, C, D, H, W) -> (B, D, H, W, C)
         x = self.embedding(x)  # (B, D, H, W, C) -> (B, D, H, W, 64)
@@ -85,6 +86,7 @@ class Autoencoder(nn.Module):
         return logits
 
     def get_latent(self, x):
+        assert len(x.shape) == 5
         # Linear embedding
         x = x.permute(0, 2, 3, 4, 1)  # (B, C, D, H, W) -> (B, D, H, W, C)
         x = self.embedding(x)  # (B, D, H, W, C) -> (B, D, H, W, 64)

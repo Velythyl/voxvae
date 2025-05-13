@@ -40,9 +40,9 @@ def wandb_init(cfg, meta_key="meta"):
 def load_wandbconfig_as_hydraconfig(path):
     if isinstance(path, str):
         path = Path(path)
-    if not str(path).endswith('files'):
-        path = path / 'files'
-    assert os.path.exists(path)
+    #if not str(path).endswith('files'):
+    #    path = path / 'files'
+    assert os.path.exists(path), path
 
     cfg = yaml.load(open(path / "config.yaml"), Loader=yaml.SafeLoader)
 

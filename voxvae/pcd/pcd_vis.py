@@ -22,6 +22,7 @@ def pc_to_pcd(p, c):
 
 def visualize_voxgrid(voxgrid: Union[jnp.ndarray, VoxGrid]):
     if isinstance(voxgrid, np.ndarray) or isinstance(voxgrid, jnp.ndarray):
+        voxgrid = voxgrid.squeeze()
         temp = VoxGrid.build_from_bounds(jnp.zeros(3), jnp.ones(3), 1 / voxgrid.shape[0])
         voxgrid = temp.replace(grid=voxgrid)
 

@@ -35,8 +35,7 @@ def get_checkpoint_path(path, checkpoint_idx):
 def load_vma(path: Union[str, Path], checkpoint=-1, cfg=None):
     if isinstance(path, str):
         path = Path(path)
-    if not str(path).endswith('files'):
-        path = path / 'files'
+
     assert os.path.exists(path)
 
     if cfg is None:

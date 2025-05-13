@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 from typing import Dict, Union, List
 
+import jax
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from voxvae.dataloading.splits import split_counts
 from voxvae.pcd.pcd_utils import pc_marshall
@@ -68,6 +69,7 @@ class PointCloudDataset(Dataset):
 
         # Load all JSON files and store the point clouds and colors
         num_workers = max(mp.cpu_count() - 4, 1)
+        print(f"Loading jsons using <{num_workers}> workers...")
         with mp.Pool(num_workers) as pool:
             jsons = list(
                 tqdm(
@@ -77,6 +79,7 @@ class PointCloudDataset(Dataset):
                     desc="Loading PCDs from JSON"
                 )
             )
+        print("...done!")
         self.json_paths = [x for (x,_) in jsons]
         self.json_paths_to_components = {x:dico["component_names"] for (x,dico) in jsons}
 
@@ -231,7 +234,6 @@ def load_for_inference(json_paths: Union[str, Path, List], cfg):
             cleaned_json_paths.append(path)
     del json_paths
 
-
     dataset = PointCloudDataset(cleaned_json_paths)
 
     from voxvae.dataloading.collator import get_collation_fn
@@ -240,18 +242,25 @@ def load_for_inference(json_paths: Union[str, Path, List], cfg):
         pcd_isnot=cfg.datarep.pcd_isnot, disable_random_3d_rot=None, handle_singular_only=True)
 
     jsonpaths = []
-    batch = []
     robotcomponents = []
-    for i in range(len(dataset)):
-        pcd_points, masks = dataset[i]
+    pcd_points = []
+    masks = []
+    for i in trange(len(dataset)):
+        pcd, mask = dataset[i]
         jsonpath, robotcomponent = dataset.idx_to_jsonpath_and_robotcomponent(i)
-
-
-        voxgrid = torch2jax.j2t(transformation_fn(None, pcd_points, masks)).unsqueeze(0)
         jsonpaths.append(jsonpath)
         robotcomponents.append(robotcomponent)
-        batch.append(voxgrid)
-    return jsonpaths, robotcomponents, torch.stack(batch)
+        pcd_points.append(pcd)
+        masks.append(mask)
+
+    import jax.numpy as jnp
+    pcds = jnp.stack(pcd_points)
+    masks = jnp.stack(masks)
+    voxgrids = jax.vmap(transformation_fn)(jnp.ones((pcds.shape[0],)), pcds, masks)
+    voxgrids = jnp.expand_dims(voxgrids, 1)
+    voxgrids = torch2jax.j2t(voxgrids)
+
+    return jsonpaths, robotcomponents, voxgrids
 
 if __name__ == "__main__":
     splitloaders = get_dataloader("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml", 32, 32, 10)
