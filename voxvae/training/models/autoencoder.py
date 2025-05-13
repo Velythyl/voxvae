@@ -1,6 +1,6 @@
 import torch
 
-from voxvae.training.models import fca, resnet, resnet_upsample, resnet_linear, resnet_otherlinear, vit
+from voxvae.training.models import fca, resnet, resnet_upsample, resnet_linear, resnet_otherlinear, vit, fcn
 
 
 def call_shunt(model, batch):
@@ -21,5 +21,7 @@ def build_model(model_cfg):
         autoencoder = resnet_otherlinear.Autoencoder((1,32,32,32), model_cfg.latent_size, 4)
     elif model_cfg.type == "vit":
         autoencoder = vit.ViT3DAutoencoder((1,32,32,32), model_cfg.latent_size, 4)
+    elif model_cfg.type == "fcn":
+        autoencoder = fcn.Linear3DAutoencoder((1, 32, 32, 32), model_cfg.latent_size, 4)
 
     return autoencoder
