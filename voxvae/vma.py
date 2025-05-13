@@ -1,3 +1,6 @@
+import os
+os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
+
 import functools
 import json
 import os
