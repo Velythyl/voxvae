@@ -28,9 +28,7 @@ class Linear3DAutoencoder(nn.Module):
             nn.Flatten(),
             nn.Linear(self.total_voxels, 16384),
             nn.ReLU(),
-            nn.Linear(16384, 8192),
-            nn.ReLU(),
-            nn.Linear(8192, 4096),
+            nn.Linear(16384, 4096),
             nn.ReLU(),
             nn.Linear(4096, 1024),
             nn.ReLU(),
@@ -47,9 +45,7 @@ class Linear3DAutoencoder(nn.Module):
             nn.ReLU(),
             nn.Linear(1024, 4096),
             nn.ReLU(),
-            nn.Linear(4096, 8192),
-            nn.ReLU(),
-            nn.Linear(8192, 16384),
+            nn.Linear(4096, 16384),
             nn.ReLU(),
             nn.Linear(16384, self.total_voxels),  # Output flattened class predictions
             nn.Linear(self.total_voxels, self.total_voxels*num_classes),
@@ -72,10 +68,10 @@ class Linear3DAutoencoder(nn.Module):
 
         # Decode back to voxel space
         reconstructed_flat = self.decoder(latent)
-        reconstructed = reconstructed_flat.view(batch_size, self.voxel_size, self.voxel_size, self.voxel_size)
+        #reconstructed = reconstructed_flat.view(batch_size, self.voxel_size, self.voxel_size, self.voxel_size)
 
 
-        return reconstructed, classes
+        return self.decoder(latent)
 
 
 # Example usage

@@ -2,7 +2,7 @@
 defaults:
   - model: fcn
   - train: train
-  - loss: ce_yesW
+  - loss: ce_notW
   - optimizer: adam
   - dataloader: dataloader
   - meta: meta
