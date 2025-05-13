@@ -157,7 +157,7 @@ class VMA:
         pred = vma(b.to(device)).squeeze().argmax(dim=0)
 
         from voxvae.pcd.pcd_vis import visualize_voxgrid
-        #visualize_voxgrid(b.cpu().numpy())
+        visualize_voxgrid(b.cpu().numpy())
         visualize_voxgrid(pred.cpu().numpy())
 
 
@@ -216,7 +216,7 @@ def get_normalization_func(name, vals=None):
     return functools.partial(func, vals)
 
 if __name__ == "__main__":
-    vma = VMA("./saved_runs/upsample_resnet/WFalse_L32", "./latentdir", inference_device="cpu")
+    vma = VMA("./saved_runs/upsample_resnet/WTrue_L64", "./latentdir", inference_device="cpu")
     #vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
     #x = vma.get_latents_for_robot("floor-5506-10-6-01-15-48-35_damping_3-latent.json")
     #y = vma.get_latent_for_robotcomponent("floor-5506-10-6-01-15-48-35_damping_3-latent.json", "limby/6")

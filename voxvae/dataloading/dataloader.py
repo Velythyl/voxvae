@@ -239,7 +239,7 @@ def load_for_inference(json_paths: Union[str, Path, List], cfg):
     from voxvae.dataloading.collator import get_collation_fn
     transformation_fn = get_collation_fn(voxgrid_size=cfg.dataloader.grid_size, pcd_is=cfg.datarep.pcd_is,
         pcd_isnotis=cfg.datarep.pcd_isnotis,
-        pcd_isnot=cfg.datarep.pcd_isnot, disable_random_3d_rot=None, handle_singular_only=True)
+        pcd_isnot=cfg.datarep.pcd_isnot, handle_singular_only=True)
 
     jsonpaths = []
     robotcomponents = []
@@ -256,7 +256,8 @@ def load_for_inference(json_paths: Union[str, Path, List], cfg):
     import jax.numpy as jnp
     pcds = jnp.stack(pcd_points)
     masks = jnp.stack(masks)
-    voxgrids = jax.vmap(transformation_fn)(jnp.ones((pcds.shape[0],)), pcds, masks)
+    keys = jax.vmap(lambda _: jax.random.PRNGKey(1))(jnp.ones((pcds.shape[0],)))
+    voxgrids = jax.vmap(transformation_fn)(keys, pcds, masks)
     voxgrids = jnp.expand_dims(voxgrids, 1)
     voxgrids = torch2jax.j2t(voxgrids)
 

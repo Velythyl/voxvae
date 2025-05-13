@@ -1,6 +1,6 @@
 
 defaults:
-  - model: fcn
+  - model: resnet_new_decoder
   - train: train
   - loss: ce_yesW
   - optimizer: adam
