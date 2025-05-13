@@ -90,7 +90,7 @@ class Autoencoder(nn.Module):
             nn.BatchNorm3d(32),
             nn.LeakyReLU(),
             nn.Conv3d(32, num_classes, kernel_size=3, padding=1),
-            nn.Sigmoid()  # or Tanh, depending on your data
+            #nn.Sigmoid()  # or Tanh, depending on your data
         )
 
     def forward(self, x):
