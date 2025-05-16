@@ -1,4 +1,7 @@
 import os
+
+from voxvae.utils.wandb_hydra import signals
+
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 
 import shutil
@@ -24,6 +27,7 @@ def main(cfg):
     from voxvae.utils.wandb_hydra import wandb_init
 
     wandb_init(cfg)
+    signals()
 
     #def exit_self(self, signum: int, frame = None) -> None: # fixme mila cluster weird
     #    exit(0) # exit normally

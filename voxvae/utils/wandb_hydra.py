@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from pathlib import Path
 
 import wandb
@@ -60,3 +61,62 @@ def load_wandbconfig_as_hydraconfig(path):
 
     clean_cfg = unwrap_values(cfg)
     return OmegaConf.create(clean_cfg)
+
+
+
+def signals(sigcont_cleanup_func=None, sigterm_cleanup_func=None):
+    import signal
+    import sys
+
+    # Function to send SIGKILL to self
+    def kill_self():
+        time.sleep(10)
+        os._exit(-1)
+
+    def handle_sigusr2(signum, frame):
+        print(f"Received SIGCONT (signal {signum})")
+
+        print("Cleanup...")
+        if sigcont_cleanup_func is not None:
+            sigcont_cleanup_func()
+        print("...done!")
+
+        kill_self()
+
+    def handle_sigusr1(signum, frame):
+        print(f"Received SIGCONT (signal {signum})")
+
+        print("Cleanup...")
+        if sigcont_cleanup_func is not None:
+            sigcont_cleanup_func()
+        print("...done!")
+
+        kill_self()
+
+    # Signal handler for SIGCONT
+    def handle_sigcont(signum, frame):
+        print(f"Received SIGCONT (signal {signum})")
+
+        print("Cleanup...")
+        if sigcont_cleanup_func is not None:
+            sigcont_cleanup_func()
+        print("...done!")
+
+        kill_self()
+
+    # Signal handler for SIGTERM
+    def handle_sigterm(signum, frame):
+        print(f"Received SIGTERM (signal {signum})")
+
+        print("Cleanup...")
+        if sigterm_cleanup_func is not None:
+            sigterm_cleanup_func()
+        print("...done!")
+
+        kill_self()
+
+    # Registering signal handlers
+    signal.signal(signal.SIGCONT, handle_sigcont)
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    signal.signal(signal.SIGUSR1, handle_sigusr1)
+    signal.signal(signal.SIGUSR2, handle_sigusr2)
