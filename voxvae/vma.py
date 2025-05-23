@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import yaml
 from omegaconf import OmegaConf
@@ -50,8 +51,15 @@ class VMA:
     vma_checkpoint: int = -1
     inference_device: str = "cuda:0"
 
+    _set_vma_check_path: str = None
+
+    def __hash__(self):
+        return hash(self.latentdir)
+
     @property
     def latentdir(self) -> Path:
+        if self._set_vma_check_path is not None:
+            return Path(self._latentdir) / self._set_vma_check_path
         return Path(self._latentdir) / self.vma_check_path
 
     @property
@@ -107,7 +115,7 @@ class VMA:
                     if file.replace("-latent.json", "") == robot_path.replace(".xml", "").replace("-parsed.json", "").replace("-latent.json", ""):
                         possible_path = os.path.join(root, file)
                         possible_paths.append(possible_path)
-            assert len(possible_paths) == 1
+            assert len(possible_paths) >= 1 # should be identical files even if different paths
             latentpath = possible_paths[0]
 
         with open(latentpath, "r") as f:
@@ -134,7 +142,7 @@ class VMA:
                 json_path = os.path.join(root, file)
                 if json_path.endswith(".json") and "/metadata/" not in json_path:
                     json_paths.append(json_path)
-        json_paths = json_paths[:40]
+        #json_paths = json_paths[:40]
 
         CHUNKSIZE = 30
         json_paths = [json_paths[i:i + CHUNKSIZE] for i in range(0, len(json_paths), CHUNKSIZE)]
@@ -158,6 +166,8 @@ class VMA:
         with open(f"{self.latentdir}/normalization_config.json", "w") as f:
             normalization_vals = [x.tolist() for x in normalization_vals]
             json.dump({"normalization_name": normalization, "normalization_vals": normalization_vals}, f)
+        with open(f"{self.latentdir}/meta.json", "w") as f:
+            json.dump({"latent_size": self.vma_latent_size, "weighted_loss": self.vma_is_loss_weighted, "vma_type": self.vma_model_type}, f)
 
         CACHE = {}
         for jpath, rc, l in tqdm(zip(JPATHS, RCS, LATENTS), total=len(JPATHS)):
@@ -167,7 +177,12 @@ class VMA:
 
         for k, j in CACHE.items():
             with open(self.to_latent_path(k), "w") as f:
-                json.dump(j, f)
+                json.dump(j, f, indent=2)
+
+    def get_meta(self):
+        assert os.path.exists(f"{self.latentdir}/meta.json")
+        with open(f"{self.latentdir}/meta.json", "r") as f:
+            return json.load(f)
 
     def get_latent_for_robotcomponent(self, robot_path: str, robot_component: str):
         latents = self.get_latents_for_robot(robot_path)
@@ -178,9 +193,12 @@ class VMA:
         from voxvae.dataloading.dataloader import load_for_inference
         jsonpaths, robotcomponents, batch = load_for_inference([jsonpath], self.cfg)
 
+        FOUND_COMPONENT = False
         for jpath, rc, b in zip(jsonpaths, robotcomponents, batch):
             if rc == robotcomponent:
+                FOUND_COMPONENT = True
                 break
+        assert FOUND_COMPONENT
 
         import torch
         device = torch.device(self.inference_device)
@@ -250,6 +268,7 @@ def get_normalization_func(name, vals=None):
 if __name__ == "__main__":
     vma = VMA("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu")
     vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
-    #x = vma.get_latents_for_robot("floor-5506-10-6-01-15-48-35_damping_3-latent.json")
+    #vma = VMA(None, "./latentdir", _set_vma_check_path="resnet_upsample-L32-WTrue")
+    #x = vma.get_latents_for_robot("floor-1409-0-12-01-12-30-07_perturb_density_9.xml")
     #y = vma.get_latent_for_robotcomponent("floor-5506-10-6-01-15-48-35_damping_3-latent.json", "limby/6")
-    vma.visualize_robot_component("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml/floor-5506-10-6-01-15-48-35_damping_3-parsed.json", "limby/6")
+    #vma.visualize_robot_component("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml/vt-5506-15-9-02-19-03-39_damping_0.xml", "limbx/7")
