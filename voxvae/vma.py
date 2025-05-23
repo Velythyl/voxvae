@@ -1,6 +1,7 @@
 import os
 import shutil
 
+import hydra
 import yaml
 from omegaconf import OmegaConf
 
@@ -265,9 +266,15 @@ def get_normalization_func(name, vals=None):
 
     return functools.partial(func, vals)
 
+def main(saved_vma, latentdir, inference_device, dataset_path):
+    vma = VMA(saved_vma, latentdir, inference_device=inference_device)
+    vma.write_latents(dataset_path)
+
 if __name__ == "__main__":
-    vma = VMA("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu")
-    vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
+    main("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu", dataset_path="/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
+
+    #vma = VMA("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu")
+    #vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
     #vma = VMA(None, "./latentdir", _set_vma_check_path="resnet_upsample-L32-WTrue")
     #x = vma.get_latents_for_robot("floor-1409-0-12-01-12-30-07_perturb_density_9.xml")
     #y = vma.get_latent_for_robotcomponent("floor-5506-10-6-01-15-48-35_damping_3-latent.json", "limby/6")
