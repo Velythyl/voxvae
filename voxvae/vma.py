@@ -1,4 +1,8 @@
 import os
+
+import yaml
+from omegaconf import OmegaConf
+
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 
 import functools
@@ -13,52 +17,81 @@ from dataclasses import dataclass
 from typing import Union
 from functools import lru_cache
 
+def load_wandbconfig_as_hydraconfig(path):
+    if isinstance(path, str):
+        path = Path(path)
+    #if not str(path).endswith('files'):
+    #    path = path / 'files'
+    assert os.path.exists(path), path
+
+    cfg = yaml.load(open(path / "config.yaml"), Loader=yaml.SafeLoader)
+
+    # Step 2: Strip `value` wrappers
+    def unwrap_values(d):
+        if isinstance(d, dict):
+            if "value" in d and len(d) == 1:
+                return unwrap_values(d["value"])
+            else:
+                return {k: unwrap_values(v) for k, v in d.items()}
+        elif isinstance(d, list):
+            return [unwrap_values(i) for i in d]
+        else:
+            return d
+
+    clean_cfg = unwrap_values(cfg)
+    return OmegaConf.create(clean_cfg)
+
 @dataclass
 class VMA:
     vma_path: Path
 
-    latentdir: Path
+    _latentdir: Path
 
     vma_checkpoint: int = -1
     inference_device: str = "cuda:0"
 
-    def __hash__(self):
-        STRING = f"{self.vma_path} {self.latentdir} {self.vma_checkpoint} {self.inference_device}"
-        return hash(STRING)
+    @property
+    def latentdir(self) -> Path:
+        return Path(self._latentdir) / self.vma_check_path
 
     @property
     def cfg(self):
-        from voxvae.utils.wandb_hydra import load_wandbconfig_as_hydraconfig
         return load_wandbconfig_as_hydraconfig(self.vma_path)
 
     @property
-    def vma(self):
+    def vma_latent_size(self):
+        return self.cfg.model.latent_size
 
+    @property
+    def vma_model_type(self):
+        return self.cfg.model.type
+
+    @property
+    def vma_is_loss_weighted(self):
+        return self.cfg.loss.weighted_loss
+
+    @property
+    def vma(self):
         from voxvae.load import load_vma
         return load_vma(self.vma_path, self.vma_checkpoint, self.cfg).to(self.inference_device)
 
     @property
     def vma_check_path(self):
-        return f"{self.vma_path}{self.vma_checkpoint}"
-
-    @property
-    def vma_check_hash(self):
-        return hashlib.sha256(str(self.vma_check_path).encode()).hexdigest()[:16]
+        return f"{self.vma_model_type}-L{self.vma_latent_size}-W{self.vma_is_loss_weighted}" #hashlib.sha256(str(self.vma_check_path).encode()).hexdigest()[:16]
 
     def to_latent_path(self, jsonpath):
         jsonpath = Path(jsonpath).resolve()
         rel_json = jsonpath.relative_to(jsonpath.anchor)
-        latentpath = Path(self.latentdir) / self.vma_check_hash / rel_json.with_suffix(".json")
+        latentpath = Path(self.latentdir)  / rel_json.with_suffix(".json")
         latentpath = Path(str(latentpath).replace("-parsed.json", "-latent.json"))
         latentpath.parent.mkdir(parents=True, exist_ok=True)
         return latentpath
 
     def to_json_path(self, latentpath):
         latentpath = Path(latentpath).resolve()
-        rel_path = latentpath.relative_to(Path(self.latentdir) / self.vma_check_hash)
+        rel_path = latentpath.relative_to(Path(self.latentdir))
         jsonpath = Path("/") / rel_path.with_suffix(".json")
         return jsonpath
-
 
     @lru_cache(maxsize=8192)
     def get_latents_for_robot(self, robot_path):
@@ -109,7 +142,6 @@ class VMA:
         JPATHS, RCS, LATENTS = [], [], []
         for jbatch in tqdm(json_paths):
             jsonpaths, robotcomponents, batch = load_for_inference(jbatch, self.cfg)
-            batch = batch[None]
             latents = vma.get_latent(batch.to(device)).squeeze().tolist()
 
             JPATHS.extend(jsonpaths)
@@ -217,7 +249,7 @@ def get_normalization_func(name, vals=None):
 
 if __name__ == "__main__":
     vma = VMA("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu")
-    #vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
+    vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
     #x = vma.get_latents_for_robot("floor-5506-10-6-01-15-48-35_damping_3-latent.json")
     #y = vma.get_latent_for_robotcomponent("floor-5506-10-6-01-15-48-35_damping_3-latent.json", "limby/6")
     vma.visualize_robot_component("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/dynamics/xml/floor-5506-10-6-01-15-48-35_damping_3-parsed.json", "limby/6")
