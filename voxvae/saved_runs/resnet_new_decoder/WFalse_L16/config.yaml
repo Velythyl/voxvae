@@ -1,0 +1,35 @@
+model:
+  latent_size: 16
+  type: resnet_new_decoder
+train:
+  num_epochs: 5050
+loss:
+  type: CE
+  weighted_loss: false
+optimizer:
+  type: adam
+  learning_rate: 0.001
+  clip_by_global_norm: None
+dataloader:
+  data_path: /network/scratch/c/charlie.gauthier/voxvae/unimals_100
+  batch_size: 256
+  num_workers: 30
+  grid_size: 32
+  fewer_files: -1
+  splits:
+  - 0.95
+  - 0.05
+meta:
+  project: voxvae_alltrain
+  run_name: upsample_and_new
+  tags: []
+  seed: 18429
+evaltest:
+  metrics_log_freq: 10
+  vis_log_freq: 1000
+  model_log_freq: 1000
+datarep:
+  pcd_is: 1
+  pcd_isnotis: 2
+  pcd_isnot: 3
+  onehot: true
