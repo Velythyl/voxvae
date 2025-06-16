@@ -6,16 +6,22 @@ import jaxvox
 import torch
 import torch2jax
 
-from voxvae.pcd.pcd_utils import random_3drot, p_rescale_01
+from voxvae.pcd.pcd_utils import  p_rescale_01
 from voxvae.utils.jaxutils import bool_ifelse, map_ternary, split_key
 
 
-def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False):
+
+
+from voxvae.dataloading.data_aug import random_3drot, patch_shuf, hybridize
+
+
+def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False, do_patch_shuf=True, do_hybridize=False):
     empty_voxgrid = jaxvox.VoxGrid.build_from_bounds(jnp.ones(3) * 0, jnp.ones(3) * 1, voxel_size=1 / voxgrid_size)
 
     def handle_singular(key, points, masks):
-        if disable_random_3d_rot is not None:
-            points = random_3drot(key, points)
+        if not disable_random_3d_rot:
+            key, rng = jax.random.split(key)
+            points = random_3drot(rng, points)
         points = p_rescale_01(points)
 
         v = empty_voxgrid.point_to_voxel(points)
@@ -37,14 +43,25 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_rando
         rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOTIS, pcd_isnotis, rebuild_grid)
         rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOT, pcd_isnot, rebuild_grid)
 
+        if do_patch_shuf:
+            key, rng = jax.random.split(key)
+            selected = jax.random.randint(rng, (1,), 0, 2)
+            rebuild_grid = rebuild_grid * selected + (1-selected) * patch_shuf(key, rebuild_grid, 4)
+
         return rebuild_grid
 
     if handle_singular_only:
         return handle_singular
 
     def collate_fn(key, points, mask):
-        _, keys = split_key(key, points.shape[0])
-        voxgrid = jax.vmap(handle_singular)(keys, points, mask)
+        key, rngs = split_key(key, points.shape[0])
+        voxgrid = jax.vmap(handle_singular)(rngs, points, mask)
+
+        if do_hybridize:
+            key, rng = jax.random.split(key)
+            selected = jax.random.randint(rng, (1,), 0, 2)
+            voxgrid = voxgrid * selected + (1-selected) * hybridize(key, voxgrid)
+
         return voxgrid[:,None,:,:,:]
 
     collate_fn = jax.jit(collate_fn)

@@ -49,6 +49,8 @@ def main(cfg):
         pcd_is=cfg.datarep.pcd_is,
         pcd_isnotis=cfg.datarep.pcd_isnotis,
         pcd_isnot=cfg.datarep.pcd_isnot,
+        do_patch_shuf=cfg.dataloader.patch_shuf,
+        do_hybridize=cfg.dataloader.hybridize
     )
 
     # Initialize model and optimizer
@@ -92,3 +94,10 @@ def main(cfg):
 
 if __name__ == "__main__":
     main()
+
+
+"""
+
+python3 voxvae/main.py --multirun hydra/launcher=sbatch +hydra/sweep=sbatch hydra.launcher.timeout_min=4300 hydra.launcher.gres=gpu:l40s:1 hydra.launcher.cpus_per_task=8 hydra.launcher.mem_gb=32 hydra.launcher.array_parallelism=80 hydra.launcher.partition=long meta.project=voxvae_notest meta.run_name=pls meta.seed=-1 dataloader.fewer_files=-1 dataloader.splits="train-test" loss=ce_notW,ce_yesW model=resnet_new_decoder model.latent_size=16 dataloader.data_path=/network/scratch/c/charlie.gauthier/voxvae/unimals_100
+
+"""

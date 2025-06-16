@@ -149,7 +149,7 @@ class SplitLoaders:
         weights = weights / weights.sum() * len(self.class_counts)  # optional normalization
         return torch.tensor(weights, dtype=torch.float32)
 
-def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), pcd_is=1.0, pcd_isnotis=2.0, pcd_isnot=3.0):
+def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), pcd_is=1.0, pcd_isnotis=2.0, pcd_isnot=3.0, do_patch_shuf=True, do_hybridize=True):
     # Create the dataset
 
     try:
@@ -188,20 +188,32 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
 
     from voxvae.dataloading.collator import get_collation_fn
 
-    def create_dl(dataset):
+    def create_dl(dataset, for_train):
         # Create the DataLoader
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=get_collation_fn(voxgrid_size=grid_size, pcd_is=pcd_is, pcd_isnotis=pcd_isnotis, pcd_isnot=pcd_isnot))
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=get_collation_fn(
+                voxgrid_size=grid_size,
+                pcd_is=pcd_is,
+                pcd_isnotis=pcd_isnotis,
+                pcd_isnot=pcd_isnot,
+                do_patch_shuf=do_patch_shuf if for_train else False,
+                do_hybridize=do_hybridize if for_train else False)
+        )
         return dataloader
 
 
-    train_dataset, test_dataset = create_dl(train_dataset), create_dl(test_dataset)
+    train_dataset, test_dataset = create_dl(train_dataset, for_train=True), create_dl(test_dataset, for_train=False)
     if val_dataset:
-        val_dataset = create_dl(val_dataset)
+        val_dataset = create_dl(val_dataset, for_train=False)
 
     valid_dls = [x for x in [train_dataset, val_dataset, test_dataset] if x is not None]
 
     class_count = {}
-    for dl in valid_dls:
+    for dl_i, dl in enumerate(valid_dls):
+        print(dl_i)
         for batch in dl:
             unique, uniquecounts = batch.unique(return_counts=True)
 
