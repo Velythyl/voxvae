@@ -21,6 +21,10 @@ def pc_to_pcd(p, c):
 
 
 def visualize_voxgrid(voxgrid: Union[jnp.ndarray, VoxGrid]):
+    import torch
+    if isinstance(voxgrid, torch.Tensor):
+        voxgrid = voxgrid.cpu().numpy()
+
     if isinstance(voxgrid, np.ndarray) or isinstance(voxgrid, jnp.ndarray):
         voxgrid = voxgrid.squeeze()
         temp = VoxGrid.build_from_bounds(jnp.zeros(3), jnp.ones(3), 1 / voxgrid.shape[0])

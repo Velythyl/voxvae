@@ -46,7 +46,7 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_rando
         if do_patch_shuf:
             key, rng = jax.random.split(key)
             selected = jax.random.randint(rng, (1,), 0, 2)
-            rebuild_grid = rebuild_grid * selected + (1-selected) * patch_shuf(key, rebuild_grid, 4)
+            rebuild_grid = rebuild_grid * selected + (1-selected) * patch_shuf(key, rebuild_grid, 8)
 
         return rebuild_grid
 

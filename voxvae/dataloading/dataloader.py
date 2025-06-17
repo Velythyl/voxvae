@@ -215,6 +215,9 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
     for dl_i, dl in enumerate(valid_dls):
         print(dl_i)
         for batch in dl:
+            #from voxvae.pcd.pcd_vis import visualize_voxgrid
+            #visualize_voxgrid(batch[0].squeeze())
+
             unique, uniquecounts = batch.unique(return_counts=True)
 
             unique = unique.cpu().tolist()
