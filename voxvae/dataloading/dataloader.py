@@ -149,7 +149,7 @@ class SplitLoaders:
         weights = weights / weights.sum() * len(self.class_counts)  # optional normalization
         return torch.tensor(weights, dtype=torch.float32)
 
-def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), pcd_is=1.0, pcd_isnotis=2.0, pcd_isnot=3.0, do_patch_shuf=True, do_hybridize=True):
+def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10), pcd_is=1.0, pcd_isnotis=2.0, pcd_isnot=3.0, data_aug=None):
     # Create the dataset
 
     try:
@@ -199,8 +199,7 @@ def get_dataloaders(root, grid_size, batch_size, fewer_files, splits=(80,10,10),
                 pcd_is=pcd_is,
                 pcd_isnotis=pcd_isnotis,
                 pcd_isnot=pcd_isnot,
-                do_patch_shuf=do_patch_shuf if for_train else False,
-                do_hybridize=do_hybridize if for_train else False)
+                data_aug=data_aug if for_train else None)
         )
         return dataloader
 

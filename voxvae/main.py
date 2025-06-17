@@ -49,8 +49,7 @@ def main(cfg):
         pcd_is=cfg.datarep.pcd_is,
         pcd_isnotis=cfg.datarep.pcd_isnotis,
         pcd_isnot=cfg.datarep.pcd_isnot,
-        do_patch_shuf=cfg.dataloader.patch_shuf,
-        do_hybridize=cfg.dataloader.hybridize
+        data_aug=cfg.dataloader.data_aug,
     )
 
     # Initialize model and optimizer

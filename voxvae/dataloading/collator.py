@@ -15,14 +15,34 @@ from voxvae.utils.jaxutils import bool_ifelse, map_ternary, split_key
 from voxvae.dataloading.data_aug import random_3drot, patch_shuf, hybridize
 
 
-def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False, do_patch_shuf=True, do_hybridize=False):
+def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False, data_aug=None):
     empty_voxgrid = jaxvox.VoxGrid.build_from_bounds(jnp.ones(3) * 0, jnp.ones(3) * 1, voxel_size=1 / voxgrid_size)
 
+
+
     def handle_singular(key, points, masks):
+        og_points = points
+
+
         if not disable_random_3d_rot:
             key, rng = jax.random.split(key)
             points = random_3drot(rng, points)
         points = p_rescale_01(points)
+
+
+        if data_aug is not None and data_aug.mutate:
+            # this takes rotated robot, adds it on top of non rotate robot, and then rotates the whole thing
+            # happens with 50% chance
+
+            augmented_points = jnp.concatenate((points, p_rescale_01(og_points)))
+            key, rng = jax.random.split(key)
+            augmented_points = random_3drot(rng, augmented_points)
+            augmented_points = p_rescale_01(augmented_points)
+
+            key, rng = jax.random.split(key)
+            selected = jax.random.randint(rng, (1,), 0, 2)
+            masks = jnp.concatenate([masks, masks])
+            points = selected * (jnp.concatenate([points, points])) + (1-selected) * augmented_points
 
         v = empty_voxgrid.point_to_voxel(points)
 
@@ -43,10 +63,12 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_rando
         rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOTIS, pcd_isnotis, rebuild_grid)
         rebuild_grid = jax.numpy.where(combined_voxgrid == CUR_ISNOT, pcd_isnot, rebuild_grid)
 
-        if do_patch_shuf:
+        if data_aug is not None and data_aug.patch_shuf:
             key, rng = jax.random.split(key)
             selected = jax.random.randint(rng, (1,), 0, 2)
             rebuild_grid = rebuild_grid * selected + (1-selected) * patch_shuf(key, rebuild_grid, 8)
+
+
 
         return rebuild_grid
 
@@ -57,7 +79,7 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_rando
         key, rngs = split_key(key, points.shape[0])
         voxgrid = jax.vmap(handle_singular)(rngs, points, mask)
 
-        if do_hybridize:
+        if data_aug is not None and data_aug.hybridize:
             key, rng = jax.random.split(key)
             selected = jax.random.randint(rng, (1,), 0, 2)
             voxgrid = voxgrid * selected + (1-selected) * hybridize(key, voxgrid)
