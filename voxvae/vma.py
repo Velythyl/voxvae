@@ -271,7 +271,7 @@ def main(saved_vma, latentdir, inference_device, dataset_path):
     vma.write_latents(dataset_path)
 
 if __name__ == "__main__":
-    main("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu", dataset_path="/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")
+    main("/home/mila/c/charlie.gauthier/voxvae/voxvae/saved_runs/resnet_new_decoder/WTrue_L16", "./latentdir", inference_device="cpu", dataset_path="/network/scratch/c/charlie.gauthier/unimals_100")
 
     #vma = VMA("./saved_runs/upsample_resnet/WTrue_L32", "./latentdir", inference_device="cpu")
     #vma.write_latents("/home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/")

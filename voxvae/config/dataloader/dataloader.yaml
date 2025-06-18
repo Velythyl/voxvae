@@ -1,12 +1,12 @@
 
-data_path: /home/charlie/Desktop/MJCFConvert/mjcf2o3d/unimals_100/ # /network/scratch/c/charlie.gauthier/voxvae/unimals_100
+data_path: /network/scratch/c/charlie.gauthier/unimals_100
 batch_size: 32
 num_workers: 4
 grid_size: 32
-fewer_files: 10 # -1 # files[:fewer_files]
-splits: [0.9, 0.1]  # either 2-tuple or 3-tuple that sums to 1, or "train-test", which uses train/test split from the dataset
+fewer_files: -1 # -1 # files[:fewer_files]
+splits: train-/test/-/train/  # either 2-tuple or 3-tuple that sums to 1, or "train-test", which uses train/test split from the dataset
 
 data_aug:
   patch_shuf: False
   hybridize: False
-  mutate: True
+  mutate: False

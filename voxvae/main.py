@@ -99,4 +99,6 @@ if __name__ == "__main__":
 
 python3 voxvae/main.py --multirun hydra/launcher=sbatch +hydra/sweep=sbatch hydra.launcher.timeout_min=4300 hydra.launcher.gres=gpu:l40s:1 hydra.launcher.cpus_per_task=8 hydra.launcher.mem_gb=32 hydra.launcher.array_parallelism=80 hydra.launcher.partition=long meta.project=voxvae_notest meta.run_name=pls meta.seed=-1 dataloader.fewer_files=-1 dataloader.splits="train-test" loss=ce_notW,ce_yesW model=resnet_new_decoder model.latent_size=16 dataloader.data_path=/network/scratch/c/charlie.gauthier/voxvae/unimals_100
 
+python3 voxvae/main.py --multirun hydra/launcher=sbatch +hydra/sweep=sbatch hydra.launcher.timeout_min=4300 hydra.launcher.gres=gpu:rtx8000:1 hydra.launcher.cpus_per_task=4 hydra.launcher.mem_gb=24 hydra.launcher.array_parallelism=80 hydra.launcher.partition=main meta.project=voxvae_notest meta.run_name=plswork meta.seed=-1 dataloader.fewer_files=-1 dataloader.splits="train-/test/-/train/" loss=ce_yesW model=resnet_new_decoder model.latent_size=16 dataloader.data_path=/network/scratch/c/charlie.gauthier/unimals_100 dataloader.batch_size=256 dataloader.data_aug.patch_shuf=False dataloader.data_aug.hybridize=False dataloader.data_aug.mutate=True,False
+
 """
