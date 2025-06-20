@@ -6,8 +6,12 @@ from voxvae.training.metrics_and_losses import metrics, vis
 
 
 # Training step
-def train_step(loss_func, optimizer, model, x):
+def train_step(loss_func, optimizer, model, x, masked_autoencoder):
     optimizer.zero_grad()
+
+    if False:
+        pass
+
     output = model(x)
 
     loss = loss_func(output, x.squeeze(1).long())
@@ -16,7 +20,7 @@ def train_step(loss_func, optimizer, model, x):
     return loss.item()
 
 # Training loop
-def train(model, splitloaders, optimizer, num_epochs, loss_func, evaltestcfg, device):
+def train(model, splitloaders, optimizer, num_epochs, loss_func, evaltestcfg, device, cfg):
     train_dl = splitloaders.train
     val_dl = splitloaders.val
     test_dl = splitloaders.test
@@ -30,7 +34,7 @@ def train(model, splitloaders, optimizer, num_epochs, loss_func, evaltestcfg, de
         # Training loop
         for x in train_dl:
             x = x.to(device)  # Move data to device (e.g., GPU)
-            loss = train_step(loss_func, optimizer, model, x)
+            loss = train_step(loss_func, optimizer, model, x, cfg.dataloader.data_aug.masked_autoencoder)
             epoch_loss += loss
 
         epoch_loss /= len(train_dl)

@@ -86,7 +86,7 @@ def main(cfg):
 
     # Train the model
     from voxvae.training.train import train
-    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, loss_func=loss_func,  evaltestcfg=cfg.evaltest, device=device)
+    trained_model = train(model, splitloaders, optimizer, num_epochs=cfg.train.num_epochs, loss_func=loss_func,  evaltestcfg=cfg.evaltest, device=device, cfg=cfg)
 
     wandb.finish()
 

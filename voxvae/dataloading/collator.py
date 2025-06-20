@@ -1,4 +1,6 @@
 import functools
+import random
+import time
 
 import jax
 import jax.numpy as jnp
@@ -17,7 +19,6 @@ from voxvae.dataloading.data_aug import random_3drot, patch_shuf, hybridize
 
 def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_random_3d_rot=False, handle_singular_only=False, data_aug=None):
     empty_voxgrid = jaxvox.VoxGrid.build_from_bounds(jnp.ones(3) * 0, jnp.ones(3) * 1, voxel_size=1 / voxgrid_size)
-
 
 
     def handle_singular(key, points, masks):
@@ -94,7 +95,7 @@ def get_collation_fn(voxgrid_size, pcd_is, pcd_isnotis, pcd_isnot, disable_rando
         points = jnp.array(points)
         masks = jnp.array(masks)
 
-        key = jax.random.PRNGKey(torch.randint(0, 10000, (1,)).item())  # gross
+        key = jax.random.PRNGKey(time.time_ns() - random.randint(0,100))  # gross
         batch = collate_fn(key, points, masks)
         batch = torch2jax.j2t(batch)
         return batch
