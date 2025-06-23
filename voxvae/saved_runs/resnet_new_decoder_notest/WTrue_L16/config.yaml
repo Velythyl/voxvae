@@ -1,0 +1,77 @@
+_wandb:
+    value:
+        cli_version: 0.19.11
+        m: []
+        python_version: 3.10.11
+        t:
+            "1":
+                - 12
+                - 50
+                - 55
+            "2":
+                - 1
+                - 5
+                - 12
+                - 41
+                - 50
+                - 53
+                - 55
+            "3":
+                - 2
+                - 13
+                - 15
+                - 16
+                - 23
+                - 55
+            "4": 3.10.11
+            "5": 0.19.11
+            "8":
+                - 8
+            "12": 0.19.11
+            "13": linux-x86_64
+dataloader:
+    value:
+        batch_size: 256
+        data_aug:
+            hybridize: false
+            masked_autoencoder: false
+            mutate: false
+            patch_shuf: false
+        data_path: /network/scratch/c/charlie.gauthier/unimals_100
+        fewer_files: -1
+        grid_size: 32
+        num_workers: 4
+        splits: train-/test/-/train/
+datarep:
+    value:
+        onehot: true
+        pcd_is: 1
+        pcd_isnot: 3
+        pcd_isnotis: 2
+evaltest:
+    value:
+        metrics_log_freq: 10
+        model_log_freq: 1000
+        vis_log_freq: 1000
+loss:
+    value:
+        type: CE
+        weighted_loss: true
+meta:
+    value:
+        project: voxvae_notest
+        run_name: plswork
+        seed: 487
+        tags: []
+model:
+    value:
+        latent_size: 16
+        type: resnet_new_decoder
+optimizer:
+    value:
+        clip_by_global_norm: None
+        learning_rate: 0.001
+        type: adam
+train:
+    value:
+        num_epochs: 5050
